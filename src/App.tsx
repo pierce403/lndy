@@ -10,8 +10,27 @@ import Dashboard from "./components/Dashboard";
 function App() {
   const [activeTab, setActiveTab] = useState<"browse" | "create" | "dashboard">("browse");
 
+  // Check if required environment variables are set
+  const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID;
+
+  if (!clientId) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Configuration Error</h2>
+          <p className="text-gray-700 mb-4">
+            Missing Thirdweb Client ID. Please set VITE_THIRDWEB_CLIENT_ID in your environment variables.
+          </p>
+          <p className="text-sm text-gray-500">
+            Get your client ID from <a href="https://thirdweb.com/dashboard" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Thirdweb Dashboard</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ThirdwebProvider activeChain={Sepolia} clientId={import.meta.env.VITE_THIRDWEB_CLIENT_ID || ""}>
+    <ThirdwebProvider activeChain={Sepolia} clientId={clientId}>
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

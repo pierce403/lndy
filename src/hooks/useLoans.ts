@@ -6,17 +6,32 @@ import { sdk } from "../lib/client";
 export const useLoans = () => {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const launcherAddress = import.meta.env.VITE_LAUNCHER_CONTRACT_ADDRESS;
-  const { contract: launcherContract } = useContract(launcherAddress);
   
-  const { data: loanAddresses, isLoading: isLoadingLoans } = useContractRead(
+  // Only try to connect to contract if address is provided
+  const { contract: launcherContract } = useContract(launcherAddress || undefined);
+  
+  const { data: loanAddresses, isLoading: isLoadingLoans, error: contractError } = useContractRead(
     launcherContract,
     "getAllLoans"
   );
 
   useEffect(() => {
     const fetchLoanDetails = async () => {
+      if (!launcherAddress) {
+        setError("Launcher contract address not configured");
+        setIsLoading(false);
+        return;
+      }
+
+      if (contractError) {
+        setError("Failed to connect to contract");
+        setIsLoading(false);
+        return;
+      }
+
       if (!loanAddresses || (Array.isArray(loanAddresses) && loanAddresses.length === 0)) {
         setIsLoading(false);
         return;
@@ -64,5 +79,5 @@ export const useLoans = () => {
     }
   }, [loanAddresses, isLoadingLoans]);
 
-  return { loans, isLoading };
+  return { loans, isLoading, error };
 };

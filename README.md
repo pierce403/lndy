@@ -54,11 +54,13 @@ lndy-app/
    npm install
    ```
 
-3. Create a `.env` file in the frontend directory with your thirdweb client ID:
+3. Create a `.env` file in the root directory with your thirdweb client ID:
    ```
    VITE_THIRDWEB_CLIENT_ID=your-client-id
    VITE_LAUNCHER_CONTRACT_ADDRESS=your-launcher-contract-address
    ```
+
+   **Important**: Get your Thirdweb Client ID from [Thirdweb Dashboard](https://thirdweb.com/dashboard)
 
 4. Start the development server:
    ```
