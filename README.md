@@ -15,7 +15,7 @@ LNDY is a decentralized social lending platform that allows users to request loa
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **Blockchain Integration**: thirdweb SDK
 - **Smart Contracts**: Solidity (ERC-1155)
-- **Network**: Sepolia Testnet (for development)
+- **Network**: Ethereum Mainnet
 
 ## Project Structure
 
@@ -76,7 +76,7 @@ lndy-app/
    npm install -g @thirdweb-dev/cli
    ```
 
-2. Deploy the contracts to Sepolia testnet:
+2. Deploy the contracts to Ethereum mainnet:
    ```
    cd contracts
    thirdweb deploy
