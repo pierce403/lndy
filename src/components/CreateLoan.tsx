@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { useAddress, useContract, useContractWrite } from "@thirdweb-dev/react";
+import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { prepareContractCall } from "thirdweb";
+import { getLauncherContract } from "../lib/client";
 
 const CreateLoan = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const [loanAmount, setLoanAmount] = useState<string>("40000");
   const [interestRate, setInterestRate] = useState<string>("1000"); // 10% in basis points
   const [duration, setDuration] = useState<string>("2592000"); // 30 days in seconds
   const [description, setDescription] = useState<string>("");
   const [isCreating, setIsCreating] = useState<boolean>(false);
 
-  const { contract } = useContract(import.meta.env.VITE_LAUNCHER_CONTRACT_ADDRESS);
-  const { mutateAsync: createLoan, isLoading } = useContractWrite(contract, "createLoan");
+  const { mutate: sendTransaction } = useSendTransaction();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,23 +30,35 @@ const CreateLoan = () => {
       const durationSeconds = parseInt(duration);
       const fundingPeriod = 604800; // 1 week in seconds
       
-      const data = await createLoan({ 
-        args: [
+      const contract = getLauncherContract();
+      
+      const transaction = prepareContractCall({
+        contract,
+        method: "function createLoan(uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingPeriod, string _description)",
+        params: [
           loanAmountWei,
-          interestRateBps,
-          durationSeconds,
-          fundingPeriod,
+          BigInt(interestRateBps),
+          BigInt(durationSeconds),
+          BigInt(fundingPeriod),
           description
-        ] 
+        ]
       });
       
-      console.info("Contract call success", data);
-      alert("Loan created successfully!");
-      
-      setLoanAmount("40000");
-      setInterestRate("1000");
-      setDuration("2592000");
-      setDescription("");
+      sendTransaction(transaction, {
+        onSuccess: (result) => {
+          console.info("Contract call success", result);
+          alert("Loan created successfully!");
+          
+          setLoanAmount("40000");
+          setInterestRate("1000");
+          setDuration("2592000");
+          setDescription("");
+        },
+        onError: (error) => {
+          console.error("Contract call failure", error);
+          alert("Failed to create loan. See console for details.");
+        }
+      });
     } catch (err) {
       console.error("Contract call failure", err);
       alert("Failed to create loan. See console for details.");
@@ -141,12 +155,12 @@ const CreateLoan = () => {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={isLoading || isCreating}
+                disabled={isCreating}
                 className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                  (isLoading || isCreating) ? "opacity-50 cursor-not-allowed" : ""
+                  isCreating ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isLoading || isCreating ? "Creating..." : "Create Loan"}
+                {isCreating ? "Creating..." : "Create Loan"}
               </button>
             </div>
           </div>

@@ -1,4 +1,6 @@
-import { useAddress, useContract, useContractWrite } from "@thirdweb-dev/react";
+import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { prepareContractCall } from "thirdweb";
+import { getLoanContract } from "../lib/client";
 import { Loan } from "../types/types";
 
 interface LoanCardProps {
@@ -6,9 +8,9 @@ interface LoanCardProps {
 }
 
 const LoanCard = ({ loan }: LoanCardProps) => {
-  const address = useAddress();
-  const { contract } = useContract(loan.address);
-  const { mutateAsync: fundLoan, isLoading } = useContractWrite(contract, "fundLoan");
+  const account = useActiveAccount();
+  const address = account?.address;
+  const { mutate: sendTransaction, isPending } = useSendTransaction();
 
   const progressPercentage = loan.loanAmount > 0 
     ? Number((loan.totalFunded * BigInt(100)) / loan.loanAmount)
@@ -33,15 +35,25 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
     try {
       const fundAmount = BigInt(1e18); // 1 ETH equivalent
+      const contract = getLoanContract(loan.address);
       
-      await fundLoan({ 
-        args: [fundAmount],
-        overrides: {
-          value: fundAmount
-        }
+      const transaction = prepareContractCall({
+        contract,
+        method: "function fundLoan(uint256 amount) payable",
+        params: [fundAmount],
+        value: fundAmount
       });
       
-      alert("Loan funded successfully!");
+      sendTransaction(transaction, {
+        onSuccess: (result) => {
+          console.info("Funding success", result);
+          alert("Loan funded successfully!");
+        },
+        onError: (error) => {
+          console.error("Error funding loan:", error);
+          alert("Failed to fund loan. See console for details.");
+        }
+      });
     } catch (err) {
       console.error("Error funding loan:", err);
       alert("Failed to fund loan. See console for details.");
@@ -107,12 +119,12 @@ const LoanCard = ({ loan }: LoanCardProps) => {
         {!loan.isActive && !loan.isRepaid && Math.floor(Date.now() / 1000) < loan.fundingDeadline ? (
           <button
             onClick={handleFund}
-            disabled={isLoading || !address}
+            disabled={isPending || !address}
             className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-              isLoading || !address ? "opacity-50 cursor-not-allowed" : ""
+              isPending || !address ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {isLoading ? "Processing..." : "Fund This Loan"}
+            {isPending ? "Processing..." : "Fund This Loan"}
           </button>
         ) : loan.isActive && !loan.isRepaid ? (
           <div className="text-center text-sm text-gray-600">

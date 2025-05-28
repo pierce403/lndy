@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useAddress } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
 import LoanCard from "./LoanCard";
 import { useLoans } from "../hooks/useLoans";
 import { useInvestments } from "../hooks/useInvestments";
 
 const Dashboard = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const { loans, isLoading } = useLoans();
   const [activeTab, setActiveTab] = useState<"created" | "invested">("created");
   

@@ -1,5 +1,6 @@
-import { ThirdwebProvider, ConnectWallet } from "@thirdweb-dev/react";
-import { Sepolia } from "@thirdweb-dev/chains";
+import { ThirdwebProvider, ConnectButton } from "thirdweb/react";
+import { createThirdwebClient } from "thirdweb";
+import { sepolia } from "thirdweb/chains";
 import { useState } from "react";
 import "./App.css";
 
@@ -29,14 +30,21 @@ function App() {
     );
   }
 
+  const client = createThirdwebClient({
+    clientId: clientId,
+  });
+
   return (
-    <ThirdwebProvider activeChain={Sepolia} clientId={clientId}>
+    <ThirdwebProvider>
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold text-gray-900">LNDY</h1>
-              <ConnectWallet />
+              <ConnectButton 
+                client={client}
+                chain={sepolia}
+              />
             </div>
             <p className="mt-2 text-sm text-gray-600">Social lending powered by blockchain</p>
           </div>

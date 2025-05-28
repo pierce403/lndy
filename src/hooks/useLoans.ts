@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useContract, useContractRead } from "@thirdweb-dev/react";
+import { readContract } from "thirdweb";
 import { Loan } from "../types/types";
-import { sdk } from "../lib/client";
+import { getLauncherContract, getLoanContract } from "../lib/client";
 
 export const useLoans = () => {
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -9,14 +9,6 @@ export const useLoans = () => {
   const [error, setError] = useState<string | null>(null);
 
   const launcherAddress = import.meta.env.VITE_LAUNCHER_CONTRACT_ADDRESS;
-  
-  // Only try to connect to contract if address is provided
-  const { contract: launcherContract } = useContract(launcherAddress || undefined);
-  
-  const { data: loanAddresses, isLoading: isLoadingLoans, error: contractError } = useContractRead(
-    launcherContract,
-    "getAllLoans"
-  );
 
   useEffect(() => {
     const fetchLoanDetails = async () => {
@@ -26,38 +18,43 @@ export const useLoans = () => {
         return;
       }
 
-      if (contractError) {
-        setError("Failed to connect to contract");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!loanAddresses || (Array.isArray(loanAddresses) && loanAddresses.length === 0)) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        const addresses = Array.isArray(loanAddresses) ? loanAddresses : [];
+        const launcherContract = getLauncherContract();
         
-        const loanDetailsPromises = addresses.map(async (loanAddress: string) => {
+        // Read loan addresses from the launcher contract
+        const loanAddresses = await readContract({
+          contract: launcherContract,
+          method: "function getAllLoans() view returns (address[])",
+          params: [],
+        });
+
+        if (!loanAddresses || loanAddresses.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        const loanDetailsPromises = loanAddresses.map(async (loanAddress: string) => {
           try {
-            const loanContract = await sdk.getContract(loanAddress);
+            const loanContract = getLoanContract(loanAddress);
             
-            const loanDetails = await loanContract.call("getLoanDetails");
+            const loanDetails = await readContract({
+              contract: loanContract,
+              method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingDeadline, uint256 _repaymentDate, string _description, address _borrower, uint256 _totalFunded, bool _isActive, bool _isRepaid)",
+              params: [],
+            });
             
             return {
               address: loanAddress,
-              loanAmount: loanDetails._loanAmount,
-              interestRate: loanDetails._interestRate,
-              duration: loanDetails._duration,
-              fundingDeadline: loanDetails._fundingDeadline,
-              repaymentDate: loanDetails._repaymentDate,
-              description: loanDetails._description,
-              borrower: loanDetails._borrower,
-              totalFunded: loanDetails._totalFunded,
-              isActive: loanDetails._isActive,
-              isRepaid: loanDetails._isRepaid
+              loanAmount: loanDetails[0],
+              interestRate: Number(loanDetails[1]),
+              duration: Number(loanDetails[2]),
+              fundingDeadline: Number(loanDetails[3]),
+              repaymentDate: Number(loanDetails[4]),
+              description: loanDetails[5],
+              borrower: loanDetails[6],
+              totalFunded: loanDetails[7],
+              isActive: loanDetails[8],
+              isRepaid: loanDetails[9]
             };
           } catch (err) {
             console.error(`Error fetching details for loan ${loanAddress}:`, err);
@@ -69,15 +66,14 @@ export const useLoans = () => {
         setLoans(loanDetails.filter(Boolean) as Loan[]);
       } catch (error) {
         console.error("Error fetching loan details:", error);
+        setError("Failed to fetch loans");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!isLoadingLoans && loanAddresses) {
-      fetchLoanDetails();
-    }
-  }, [loanAddresses, isLoadingLoans]);
+    fetchLoanDetails();
+  }, [launcherAddress]);
 
   return { loans, isLoading, error };
 };

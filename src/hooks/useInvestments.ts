@@ -1,25 +1,32 @@
 import { useState, useEffect } from "react";
-import { useAddress, useContract } from "@thirdweb-dev/react";
+import { useActiveAccount } from "thirdweb/react";
+import { readContract } from "thirdweb";
 import { Loan } from "../types/types";
-import { sdk } from "../lib/client";
+import { getLauncherContract, getLoanContract } from "../lib/client";
 
 export const useInvestments = () => {
-  const address = useAddress();
+  const account = useActiveAccount();
+  const address = account?.address;
   const [investments, setInvestments] = useState<Loan[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const launcherAddress = import.meta.env.VITE_LAUNCHER_CONTRACT_ADDRESS;
-  const { contract: launcherContract } = useContract(launcherAddress);
 
   useEffect(() => {
     const fetchInvestments = async () => {
-      if (!address) {
+      if (!address || !launcherAddress) {
         setIsLoading(false);
         return;
       }
 
       try {
-        const allLoanAddresses = await launcherContract?.call("getAllLoans");
+        const launcherContract = getLauncherContract();
+        
+        const allLoanAddresses = await readContract({
+          contract: launcherContract,
+          method: "function getAllLoans() view returns (address[])",
+          params: [],
+        });
         
         if (!allLoanAddresses || allLoanAddresses.length === 0) {
           setInvestments([]);
@@ -29,25 +36,33 @@ export const useInvestments = () => {
 
         const investmentPromises = allLoanAddresses.map(async (loanAddress: string) => {
           try {
-            const loanContract = await sdk.getContract(loanAddress);
+            const loanContract = getLoanContract(loanAddress);
             
-            const balance = await loanContract.call("balanceOf", [address, 1]);
+            const balance = await readContract({
+              contract: loanContract,
+              method: "function balanceOf(address account, uint256 id) view returns (uint256)",
+              params: [address, BigInt(1)],
+            });
             
             if (balance && balance > 0) {
-              const loanDetails = await loanContract.call("getLoanDetails");
+              const loanDetails = await readContract({
+                contract: loanContract,
+                method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingDeadline, uint256 _repaymentDate, string _description, address _borrower, uint256 _totalFunded, bool _isActive, bool _isRepaid)",
+                params: [],
+              });
               
               return {
                 address: loanAddress,
-                loanAmount: loanDetails._loanAmount,
-                interestRate: loanDetails._interestRate,
-                duration: loanDetails._duration,
-                fundingDeadline: loanDetails._fundingDeadline,
-                repaymentDate: loanDetails._repaymentDate,
-                description: loanDetails._description,
-                borrower: loanDetails._borrower,
-                totalFunded: loanDetails._totalFunded,
-                isActive: loanDetails._isActive,
-                isRepaid: loanDetails._isRepaid
+                loanAmount: loanDetails[0],
+                interestRate: Number(loanDetails[1]),
+                duration: Number(loanDetails[2]),
+                fundingDeadline: Number(loanDetails[3]),
+                repaymentDate: Number(loanDetails[4]),
+                description: loanDetails[5],
+                borrower: loanDetails[6],
+                totalFunded: loanDetails[7],
+                isActive: loanDetails[8],
+                isRepaid: loanDetails[9]
               };
             }
             
@@ -68,7 +83,7 @@ export const useInvestments = () => {
     };
 
     fetchInvestments();
-  }, [address, launcherContract]);
+  }, [address, launcherAddress]);
 
   return { investments, isLoading };
 };
