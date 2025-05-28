@@ -15,7 +15,7 @@ LNDY is a decentralized social lending platform that allows users to request loa
 - **Frontend**: React, TypeScript, Tailwind CSS
 - **Blockchain Integration**: thirdweb SDK
 - **Smart Contracts**: Solidity (ERC-1155)
-- **Network**: Ethereum Mainnet
+- **Network**: Base
 
 ## Project Structure
 
@@ -39,6 +39,7 @@ lndy-app/
 
 - Node.js and npm
 - Metamask or another Web3 wallet
+- Base network configured in your wallet
 
 ### Installation
 
@@ -50,17 +51,17 @@ lndy-app/
 
 2. Install frontend dependencies:
    ```
-   cd frontend
    npm install
    ```
 
-3. Create a `.env` file in the root directory with your thirdweb client ID:
+3. Configure your environment variables:
    ```
-   VITE_THIRDWEB_CLIENT_ID=your-client-id
-   VITE_LAUNCHER_CONTRACT_ADDRESS=your-launcher-contract-address
+   cp env.template .env
    ```
-
-   **Important**: Get your Thirdweb Client ID from [Thirdweb Dashboard](https://thirdweb.com/dashboard)
+   
+   Then edit `.env` with your actual values:
+   - Get your Thirdweb Client ID from [Thirdweb Dashboard](https://thirdweb.com/dashboard)
+   - Deploy contracts to Base and add the launcher contract address
 
 4. Start the development server:
    ```
@@ -76,22 +77,31 @@ lndy-app/
    npm install -g @thirdweb-dev/cli
    ```
 
-2. Deploy the contracts to Ethereum mainnet:
+2. Deploy the contracts to Base:
    ```
    cd contracts
    thirdweb deploy
    ```
 
-3. Follow the prompts to deploy your contracts
+3. Follow the prompts to deploy your contracts to Base network
 4. Update the `.env` file with your deployed contract addresses
+
+### Base Network Setup
+
+To use this app, you'll need to:
+
+1. Add Base network to your wallet (if not already added)
+2. Get some ETH on Base for transaction fees
+3. Connect your wallet and ensure you're on the Base network
 
 ## Usage
 
 1. Connect your wallet using the "Connect Wallet" button
-2. Create a loan by filling out the form in the "Create Loan" tab
-3. Browse available loans in the "Browse Loans" tab
-4. Fund loans by clicking the "Fund This Loan" button
-5. View your created loans and investments in the "My Dashboard" tab
+2. Ensure you're connected to Base network
+3. Create a loan by filling out the form in the "Create Loan" tab
+4. Browse available loans in the "Browse Loans" tab
+5. Fund loans by clicking the "Fund This Loan" button
+6. View your created loans and investments in the "My Dashboard" tab
 
 ## License
 

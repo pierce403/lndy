@@ -27,6 +27,51 @@ const LoanCard = ({ loan }: LoanCardProps) => {
     });
   };
 
+  // Calculate total repayment amount (principal + thank you amount)
+  const calculateTotalRepayment = () => {
+    const principal = Number(loan.loanAmount) / 1e18;
+    const thankYouAmount = (principal * loan.interestRate) / 10000;
+    return principal + thankYouAmount;
+  };
+
+  // Calculate repayment health for active loans
+  const calculateRepaymentHealth = () => {
+    if (!loan.isActive || loan.isRepaid) return null;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const loanStartTime = loan.fundingDeadline; // Assuming loan starts when funding ends
+    const totalDuration = loan.repaymentDate - loanStartTime;
+    const timeElapsed = now - loanStartTime;
+    const timeProgress = Math.max(0, Math.min(100, (timeElapsed / totalDuration) * 100));
+    
+    // For now, assume no repayment has been made yet (repaymentProgress = 0)
+    // In a real implementation, you'd track actual repayments
+    const repaymentProgress = 0;
+    
+    // Health is good if repayment is keeping up with time
+    // Yellow if behind, red if significantly behind
+    let healthStatus = 'good';
+    let healthColor = 'bg-green-500';
+    
+    if (repaymentProgress < timeProgress - 20) {
+      healthStatus = 'behind';
+      healthColor = 'bg-yellow-500';
+    }
+    if (repaymentProgress < timeProgress - 40) {
+      healthStatus = 'concerning';
+      healthColor = 'bg-red-500';
+    }
+    
+    return {
+      timeProgress,
+      repaymentProgress,
+      healthStatus,
+      healthColor
+    };
+  };
+
+  const repaymentHealth = calculateRepaymentHealth();
+
   const handleFund = async () => {
     console.log("💰 LoanCard: Fund button clicked");
     console.log("🏦 LoanCard: Loan being funded:", {
@@ -47,7 +92,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
     try {
       console.log("🚀 LoanCard: Starting loan funding process...");
-      const fundAmount = BigInt(1e18); // 1 ETH equivalent
+      const fundAmount = BigInt(1e18); // 1 ETH equivalent on Base
       console.log("💸 LoanCard: Funding amount:", Number(fundAmount) / 1e18, "ETH");
       
       console.log("🔗 LoanCard: Getting loan contract instance...");
@@ -147,21 +192,28 @@ const LoanCard = ({ loan }: LoanCardProps) => {
         
         <div className="mt-4">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Amount</span>
+            <span className="text-gray-500 dark:text-gray-400">Requesting</span>
             <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(loan.loanAmount)}</span>
           </div>
           <div className="flex justify-between text-sm mt-1">
-            <span className="text-gray-500 dark:text-gray-400">Interest Rate</span>
-            <span className="font-medium text-gray-900 dark:text-white">{loan.interestRate / 100}%</span>
+            <span className="text-gray-500 dark:text-gray-400">Will return</span>
+            <span className="font-medium text-gray-900 dark:text-white">
+              ${calculateTotalRepayment().toLocaleString()} 
+              <span className="text-xs text-gray-400 ml-1">
+                (includes ${((Number(loan.loanAmount) / 1e18 * loan.interestRate) / 10000).toLocaleString()} thank you)
+              </span>
+            </span>
           </div>
           <div className="flex justify-between text-sm mt-1">
-            <span className="text-gray-500 dark:text-gray-400">Duration</span>
-            <span className="font-medium text-gray-900 dark:text-white">{Math.floor(loan.duration / 86400)} days</span>
+            <span className="text-gray-500 dark:text-gray-400">Target repayment</span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatDate(loan.repaymentDate)}</span>
           </div>
-          <div className="flex justify-between text-sm mt-1">
-            <span className="text-gray-500 dark:text-gray-400">Funding Deadline</span>
-            <span className="font-medium text-gray-900 dark:text-white">{formatDate(loan.fundingDeadline)}</span>
-          </div>
+          {loan.isActive && !loan.isRepaid && (
+            <div className="flex justify-between text-sm mt-1">
+              <span className="text-gray-500 dark:text-gray-400">Funding deadline was</span>
+              <span className="font-medium text-gray-900 dark:text-white">{formatDate(loan.fundingDeadline)}</span>
+            </div>
+          )}
         </div>
         
         <div className="mt-4">
@@ -179,6 +231,42 @@ const LoanCard = ({ loan }: LoanCardProps) => {
             {progressPercentage}% funded
           </div>
         </div>
+
+        {/* Repayment Health Indicator for Active Loans */}
+        {repaymentHealth && (
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-500 dark:text-gray-400">Repayment Health</span>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                repaymentHealth.healthStatus === 'good' 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  : repaymentHealth.healthStatus === 'behind'
+                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+              }`}>
+                {repaymentHealth.healthStatus === 'good' ? 'On Track' : 
+                 repaymentHealth.healthStatus === 'behind' ? 'Behind Schedule' : 'Needs Attention'}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+              Time elapsed: {Math.round(repaymentHealth.timeProgress)}% • Repaid: {repaymentHealth.repaymentProgress}%
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+              <div className="relative h-2 rounded-full">
+                {/* Time progress bar */}
+                <div 
+                  className="absolute top-0 left-0 h-2 bg-gray-400 rounded-full" 
+                  style={{ width: `${repaymentHealth.timeProgress}%` }}
+                ></div>
+                {/* Repayment progress bar */}
+                <div 
+                  className={`absolute top-0 left-0 h-2 rounded-full ${repaymentHealth.healthColor}`}
+                  style={{ width: `${repaymentHealth.repaymentProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="px-5 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
@@ -194,11 +282,13 @@ const LoanCard = ({ loan }: LoanCardProps) => {
           </button>
         ) : loan.isActive && !loan.isRepaid ? (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
-            Loan is active and NFTs are now tradable
+            <div className="font-medium text-green-600 dark:text-green-400">✓ Fully funded!</div>
+            <div className="mt-1">NFTs are now tradable • Repayment in progress</div>
           </div>
         ) : loan.isRepaid ? (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
-            Loan has been repaid
+            <div className="font-medium text-green-600 dark:text-green-400">✓ Successfully repaid!</div>
+            <div className="mt-1">Thank you to all supporters</div>
           </div>
         ) : (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
@@ -211,3 +301,4 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 };
 
 export default LoanCard;
+

@@ -166,9 +166,10 @@ const CreateLoan = () => {
           console.log("✅ CreateLoan: Transaction result:", result);
           console.log("🔗 CreateLoan: Transaction hash:", result.transactionHash);
           console.log("📊 CreateLoan: Final loan data:", {
-            amount: parseFloat(loanAmount) + " ETH",
-            interest: (interestRateBps / 100) + "%",
-            duration: (durationSeconds / 86400) + " days",
+            amount: parseFloat(loanAmount) + " USD",
+            thankYouAmount: (interestRateBps / 100) + "%",
+            totalRepayment: (parseFloat(loanAmount) * (1 + interestRateBps / 10000)) + " USD",
+            targetRepaymentDays: (durationSeconds / 86400) + " days",
             imageURI,
             creator: address
           });
@@ -222,7 +223,7 @@ const CreateLoan = () => {
           <div className="space-y-6">
             <div>
               <label htmlFor="loanAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Loan Amount (USD)
+                You're requesting (USD)
               </label>
               <div className="mt-1">
                 <input
@@ -239,7 +240,7 @@ const CreateLoan = () => {
             
             <div>
               <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Interest Rate (%)
+                Thank You Amount (%)
               </label>
               <div className="mt-1">
                 <input
@@ -254,13 +255,19 @@ const CreateLoan = () => {
                 />
               </div>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                This is the interest rate you'll pay to lenders
+                Extra amount you'll return to show appreciation to your supporters
               </p>
+              {loanAmount && interestRate && (
+                <p className="mt-1 text-sm text-indigo-600 dark:text-indigo-400">
+                  You'll return: ${((parseFloat(loanAmount) * (1 + parseFloat(interestRate) / 10000))).toLocaleString()} 
+                  (includes ${((parseFloat(loanAmount) * parseFloat(interestRate)) / 10000).toLocaleString()} thank you to supporters)
+                </p>
+              )}
             </div>
             
             <div>
               <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Loan Duration (Days)
+                Target Repayment Timeframe (Days)
               </label>
               <div className="mt-1">
                 <input
@@ -273,6 +280,9 @@ const CreateLoan = () => {
                   min="1"
                 />
               </div>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                When you're planning to repay (you can repay gradually over time)
+              </p>
             </div>
             
             <div>

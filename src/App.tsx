@@ -1,6 +1,6 @@
 import { ThirdwebProvider, ConnectButton } from "thirdweb/react";
 import { createThirdwebClient } from "thirdweb";
-import { mainnet } from "thirdweb/chains";
+import { base } from "thirdweb/chains";
 import { useState } from "react";
 import "./App.css";
 
@@ -43,10 +43,10 @@ function App() {
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">LNDY</h1>
               <ConnectButton 
                 client={client}
-                chain={mainnet}
+                chain={base}
               />
             </div>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Social lending powered by Ethereum</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Social lending powered by Base</p>
           </div>
         </header>
 

@@ -76,12 +76,12 @@ export const useLoans = () => {
             };
             
             console.log(`✅ useLoans: [${index + 1}] Processed loan data for ${loanAddress}:`, processedLoan);
-            console.log(`💰 useLoans: [${index + 1}] Loan amount: ${Number(processedLoan.loanAmount) / 1e18} ETH`);
-            console.log(`📈 useLoans: [${index + 1}] Interest rate: ${processedLoan.interestRate / 100}%`);
-            console.log(`⏱️ useLoans: [${index + 1}] Duration: ${processedLoan.duration / 86400} days`);
+            console.log(`💰 useLoans: [${index + 1}] Loan amount: ${Number(processedLoan.loanAmount) / 1e18} (base units)`);
+            console.log(`💝 useLoans: [${index + 1}] Thank you amount: ${processedLoan.interestRate / 100}%`);
+            console.log(`⏱️ useLoans: [${index + 1}] Target repayment timeframe: ${processedLoan.duration / 86400} days`);
             console.log(`🖼️ useLoans: [${index + 1}] Image URI: ${processedLoan.imageURI}`);
             console.log(`👤 useLoans: [${index + 1}] Borrower: ${processedLoan.borrower}`);
-            console.log(`💸 useLoans: [${index + 1}] Total funded: ${Number(processedLoan.totalFunded) / 1e18} ETH`);
+            console.log(`💸 useLoans: [${index + 1}] Total funded: ${Number(processedLoan.totalFunded) / 1e18} (base units)`);
             console.log(`🔄 useLoans: [${index + 1}] Status - Active: ${processedLoan.isActive}, Repaid: ${processedLoan.isRepaid}`);
             
             return processedLoan;
