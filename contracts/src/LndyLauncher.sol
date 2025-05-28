@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./LndyLoan.sol";
-import "@thirdweb-dev/contracts/extension/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title LndyLauncher
@@ -17,6 +17,8 @@ contract LndyLauncher is Ownable {
     
     // Events
     event LoanCreated(address indexed loanAddress, address indexed borrower);
+    
+    constructor() Ownable(msg.sender) {}
     
     /**
      * @dev Create a new loan

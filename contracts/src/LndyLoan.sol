@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@thirdweb-dev/contracts/eip/ERC1155.sol";
-import "@thirdweb-dev/contracts/extension/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title LndyLoan
@@ -49,15 +49,13 @@ contract LndyLoan is ERC1155, Ownable {
         uint256 _fundingPeriod,
         string memory _description,
         address _borrower
-    ) ERC1155("") {
+    ) ERC1155("") Ownable(_borrower) {
         loanAmount = _loanAmount;
         interestRate = _interestRate;
         duration = _duration;
         fundingDeadline = block.timestamp + _fundingPeriod;
         description = _description;
         borrower = _borrower;
-        
-        _transferOwnership(_borrower);
         
         emit LoanCreated(_borrower, _loanAmount, _interestRate, _duration);
     }
@@ -146,7 +144,16 @@ contract LndyLoan is ERC1155, Ownable {
     
     /**
      * @dev Get loan details
-     * @return Loan details as a struct
+     * @return _loanAmount The total loan amount
+     * @return _interestRate The interest rate in basis points
+     * @return _duration The loan duration in seconds
+     * @return _fundingDeadline The funding deadline timestamp
+     * @return _repaymentDate The repayment date timestamp
+     * @return _description The loan description
+     * @return _borrower The borrower address
+     * @return _totalFunded The total amount funded
+     * @return _isActive Whether the loan is active
+     * @return _isRepaid Whether the loan is repaid
      */
     function getLoanDetails() external view returns (
         uint256 _loanAmount,
@@ -178,15 +185,13 @@ contract LndyLoan is ERC1155, Ownable {
      * @dev Check if tokens are transferable
      * Tokens are only transferable after the loan is activated
      */
-    function _beforeTokenTransfer(
-        address operator,
+    function _update(
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        uint256[] memory values
     ) internal override {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        super._update(from, to, ids, values);
         
         // If this is a mint or burn, allow it
         if (from == address(0) || to == address(0)) {
