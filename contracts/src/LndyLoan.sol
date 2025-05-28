@@ -2,206 +2,316 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title LndyLoan
- * @dev ERC1155 contract representing a loan that can be funded by multiple lenders.
- * Each token ID represents a specific loan, and the amount of tokens represents the contribution.
+ * @dev ERC1155 contract representing a social loan funded by supporters using USDC.
+ * Each unique token ID represents an individual contribution with a specific value.
+ * Contributors receive NFTs that show their contribution amount on OpenSea.
  */
-contract LndyLoan is ERC1155, Ownable {
+contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
     using Strings for uint256;
     
+    // USDC contract address on Base mainnet
+    IERC20 public constant USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+    
     // Loan details
-    uint256 public loanAmount;
-    uint256 public interestRate; // in basis points (e.g., 1000 = 10%)
-    uint256 public duration; // in seconds
-    uint256 public fundingDeadline;
-    uint256 public repaymentDate;
+    uint256 public loanAmount; // Amount requested in USDC (6 decimals)
+    uint256 public thankYouAmount; // Additional amount to show appreciation in basis points
+    uint256 public targetRepaymentDate; // When borrower plans to repay
+    uint256 public fundingDeadline; // Deadline for funding
     string public description;
-    string public imageURI; // IPFS URI for the loan NFT image
+    string public baseImageURI; // Base IPFS URI for the loan NFT images
     address public borrower;
     
     // Loan state
-    uint256 public totalFunded;
-    bool public isActive;
-    bool public isRepaid;
+    uint256 public totalFunded; // Total USDC funded
+    uint256 public totalRepaidAmount; // Total amount to be repaid (principal + thank you)
+    uint256 public actualRepaidAmount; // Amount actually repaid so far
+    bool public isActive; // True when fully funded
+    bool public isFullyRepaid; // True when completely repaid
     
-    // Token ID for this loan
-    uint256 public constant LOAN_TOKEN_ID = 1;
+    // Token tracking
+    uint256 public nextTokenId = 1; // Next token ID to mint
+    mapping(uint256 => uint256) public tokenValues; // tokenId => USDC value of this token
+    mapping(uint256 => address) public tokenSupporter; // tokenId => supporter address
+    mapping(uint256 => uint256) public tokenClaimedAmounts; // tokenId => amount already claimed
+    mapping(address => uint256[]) public supporterTokens; // supporter => array of token IDs
     
     // Events
-    event LoanCreated(address borrower, uint256 amount, uint256 interestRate, uint256 duration, string imageURI);
-    event LoanFunded(address funder, uint256 amount);
+    event LoanCreated(address indexed borrower, uint256 loanAmount, uint256 thankYouAmount, uint256 targetRepaymentDate, string baseImageURI);
+    event LoanSupported(address indexed supporter, uint256 indexed tokenId, uint256 amount);
     event LoanActivated(uint256 totalFunded);
-    event LoanRepaid();
+    event RepaymentMade(uint256 amount, uint256 totalRepaid);
+    event ReturnsClaimed(address indexed supporter, uint256 indexed tokenId, uint256 amount);
     
     /**
-     * @dev Constructor to create a new loan
-     * @param _loanAmount Total amount requested for the loan
-     * @param _interestRate Interest rate in basis points (e.g., 1000 = 10%)
-     * @param _duration Duration of the loan in seconds
+     * @dev Constructor to create a new social loan
+     * @param _loanAmount Total USDC amount requested (with 6 decimals)
+     * @param _thankYouAmount Thank you amount in basis points (e.g., 1000 = 10%)
+     * @param _targetRepaymentDate When borrower plans to repay
      * @param _fundingPeriod Period in seconds during which the loan can be funded
      * @param _description Description of the loan purpose
-     * @param _imageURI IPFS URI for the loan NFT image
+     * @param _baseImageURI Base IPFS URI for the loan NFT images
      * @param _borrower Address of the borrower
      */
     constructor(
         uint256 _loanAmount,
-        uint256 _interestRate,
-        uint256 _duration,
+        uint256 _thankYouAmount,
+        uint256 _targetRepaymentDate,
         uint256 _fundingPeriod,
         string memory _description,
-        string memory _imageURI,
+        string memory _baseImageURI,
         address _borrower
     ) ERC1155("") Ownable(_borrower) {
         loanAmount = _loanAmount;
-        interestRate = _interestRate;
-        duration = _duration;
+        thankYouAmount = _thankYouAmount;
+        targetRepaymentDate = _targetRepaymentDate;
         fundingDeadline = block.timestamp + _fundingPeriod;
         description = _description;
-        imageURI = _imageURI;
+        baseImageURI = _baseImageURI;
         borrower = _borrower;
         
-        emit LoanCreated(_borrower, _loanAmount, _interestRate, _duration, _imageURI);
+        // Calculate total repayment amount (principal + thank you)
+        totalRepaidAmount = _loanAmount + (_loanAmount * _thankYouAmount) / 10000;
+        
+        emit LoanCreated(_borrower, _loanAmount, _thankYouAmount, _targetRepaymentDate, _baseImageURI);
     }
     
     /**
-     * @dev Returns the URI for a given token ID
+     * @dev Returns OpenSea-compatible metadata URI for a token
      * @param tokenId The token ID to get URI for
-     * @return The metadata URI for the token
+     * @return The metadata JSON URI for OpenSea
      */
     function uri(uint256 tokenId) public view override returns (string memory) {
-        require(tokenId == LOAN_TOKEN_ID, "Token ID does not exist");
+        require(tokenId > 0 && tokenId < nextTokenId, "Token ID does not exist");
         
-        // Return the image URI directly for now
-        // In production, you might want to return a proper metadata JSON URI
-        return imageURI;
+        uint256 value = tokenValues[tokenId];
+        uint256 claimedAmount = tokenClaimedAmounts[tokenId];
+        address supporter = tokenSupporter[tokenId];
+        
+        // Calculate available to claim and completion status
+        uint256 totalEarned = isActive ? (value * actualRepaidAmount) / loanAmount : 0;
+        uint256 finalTotalOwed = isActive ? (value * totalRepaidAmount) / loanAmount : 0;
+        uint256 availableToClaim = totalEarned > claimedAmount ? totalEarned - claimedAmount : 0;
+        
+        // Determine token status
+        string memory tokenStatus;
+        if (!isActive && block.timestamp > fundingDeadline) {
+            // Loan funding failed
+            if (claimedAmount > 0) {
+                tokenStatus = "Funding Failed - Withdrawn";
+            } else {
+                tokenStatus = "Funding Failed - Withdraw Available";
+            }
+        } else if (!isActive) {
+            tokenStatus = "Funding";
+        } else if (isFullyRepaid && claimedAmount >= finalTotalOwed) {
+            tokenStatus = "Completed";
+        } else if (isFullyRepaid) {
+            tokenStatus = "Repaid - Claim Available";
+        } else {
+            tokenStatus = "Active";
+        }
+        
+        // Create JSON metadata for OpenSea
+        string memory json = string(abi.encodePacked(
+            '{"name": "LNDY Support Token #', tokenId.toString(),
+            '", "description": "', description, ' - This NFT represents your contribution to this social loan and serves as a permanent record of your support.",
+            '", "image": "', baseImageURI,
+            '", "attributes": [',
+            '{"trait_type": "Contribution Amount", "value": ', (value / 1e6).toString(), ', "display_type": "number"},',
+            '{"trait_type": "Claimed So Far", "value": ', (claimedAmount / 1e6).toString(), ', "display_type": "number"},',
+            '{"trait_type": "Available to Claim", "value": ', (availableToClaim / 1e6).toString(), ', "display_type": "number"},',
+            '{"trait_type": "Token Status", "value": "', tokenStatus, '"},',
+            '{"trait_type": "Supporter", "value": "', addressToString(supporter), '"},',
+            '{"trait_type": "Target Repayment", "value": "', targetRepaymentDate.toString(), '", "display_type": "date"}',
+            ']}'
+        ));
+        
+        // Return as data URI for OpenSea compatibility
+        return string(abi.encodePacked("data:application/json;base64,", base64Encode(bytes(json))));
     }
     
     /**
-     * @dev Fund the loan by contributing a specific amount
-     * @param _amount Amount to contribute to the loan
+     * @dev Support the loan with USDC
+     * @param _amount Amount of USDC to contribute (with 6 decimals)
      */
-    function fundLoan(uint256 _amount) external payable {
+    function supportLoan(uint256 _amount) external nonReentrant {
         require(block.timestamp < fundingDeadline, "Funding period has ended");
-        require(!isActive, "Loan is already active");
+        require(!isActive, "Loan is already fully funded");
+        require(_amount > 0, "Amount must be greater than 0");
         require(totalFunded + _amount <= loanAmount, "Funding amount exceeds loan requirement");
         
-        // Mint tokens to the funder representing their contribution
-        _mint(msg.sender, LOAN_TOKEN_ID, _amount, "");
+        // Transfer USDC from supporter to this contract
+        require(USDC.transferFrom(msg.sender, address(this), _amount), "USDC transfer failed");
+        
+        // Mint a unique NFT token for this contribution
+        uint256 tokenId = nextTokenId++;
+        _mint(msg.sender, tokenId, 1, ""); // Mint exactly 1 token
+        
+        // Store token metadata
+        tokenValues[tokenId] = _amount;
+        tokenSupporter[tokenId] = msg.sender;
+        supporterTokens[msg.sender].push(tokenId);
         
         totalFunded += _amount;
         
-        // If loan is fully funded, activate it
+        emit LoanSupported(msg.sender, tokenId, _amount);
+        
+        // If loan is fully funded, activate it and send funds to borrower
         if (totalFunded == loanAmount) {
             isActive = true;
-            repaymentDate = block.timestamp + duration;
+            
+            // Transfer the full loan amount to the borrower
+            require(USDC.transfer(borrower, loanAmount), "Transfer to borrower failed");
+            
             emit LoanActivated(totalFunded);
         }
-        
-        emit LoanFunded(msg.sender, _amount);
     }
     
     /**
-     * @dev Repay the loan (only callable by borrower)
+     * @dev Make a repayment on the loan (callable by borrower)
+     * @param _amount Amount to repay in USDC
      */
-    function repayLoan() external payable onlyOwner {
+    function makeRepayment(uint256 _amount) external nonReentrant {
+        require(msg.sender == borrower, "Only borrower can make repayments");
         require(isActive, "Loan is not active");
-        require(!isRepaid, "Loan is already repaid");
+        require(!isFullyRepaid, "Loan is already fully repaid");
+        require(_amount > 0, "Repayment amount must be greater than 0");
+        require(actualRepaidAmount + _amount <= totalRepaidAmount, "Repayment exceeds total amount due");
         
-        // Calculate total repayment amount (principal + interest)
-        uint256 interestAmount = (loanAmount * interestRate) / 10000;
-        uint256 totalRepayment = loanAmount + interestAmount;
+        // Transfer USDC from borrower to this contract
+        require(USDC.transferFrom(msg.sender, address(this), _amount), "USDC transfer failed");
         
-        require(msg.value >= totalRepayment, "Insufficient repayment amount");
+        actualRepaidAmount += _amount;
         
-        isRepaid = true;
+        if (actualRepaidAmount == totalRepaidAmount) {
+            isFullyRepaid = true;
+        }
         
-        emit LoanRepaid();
+        emit RepaymentMade(_amount, actualRepaidAmount);
+    }
+    
+    /**
+     * @dev Claim available returns at any time (doesn't need to wait for full repayment)
+     * @param tokenId The token ID to claim returns for
+     */
+    function claimReturns(uint256 tokenId) external nonReentrant {
+        require(isActive, "Loan is not active yet");
+        require(msg.sender == ownerOf(tokenId), "You don't own this token");
+        require(balanceOf(msg.sender, tokenId) > 0, "No tokens to claim for");
+        
+        uint256 contributionAmount = tokenValues[tokenId];
+        uint256 alreadyClaimed = tokenClaimedAmounts[tokenId];
+        
+        // Calculate total earned so far (proportional to repayments made)
+        uint256 totalEarned = (contributionAmount * actualRepaidAmount) / loanAmount;
+        
+        // Calculate how much can be claimed now
+        require(totalEarned > alreadyClaimed, "No new returns available to claim");
+        uint256 claimableAmount = totalEarned - alreadyClaimed;
+        
+        // Update claimed amount
+        tokenClaimedAmounts[tokenId] += claimableAmount;
+        
+        // Transfer claimable returns to the supporter
+        require(USDC.transfer(msg.sender, claimableAmount), "Return transfer failed");
+        
+        emit ReturnsClaimed(msg.sender, tokenId, claimableAmount);
     }
     
     /**
      * @dev Withdraw funds if loan is not activated before deadline
-     * Only callable by lenders if funding deadline has passed and loan is not active
+     * @param tokenId The token ID to withdraw funds for
      */
-    function withdrawFunds() external {
+    function withdrawFunds(uint256 tokenId) external nonReentrant {
         require(block.timestamp > fundingDeadline, "Funding period has not ended");
         require(!isActive, "Loan is already active");
+        require(msg.sender == ownerOf(tokenId), "You don't own this token");
+        require(balanceOf(msg.sender, tokenId) > 0, "No tokens to withdraw for");
+        require(tokenClaimedAmounts[tokenId] == 0, "Funds already withdrawn for this token");
         
-        uint256 userContribution = balanceOf(msg.sender, LOAN_TOKEN_ID);
-        require(userContribution > 0, "No funds to withdraw");
+        uint256 contributionAmount = tokenValues[tokenId];
         
-        // Burn the tokens
-        _burn(msg.sender, LOAN_TOKEN_ID, userContribution);
+        // Mark as withdrawn (use claimed amount to prevent double withdrawal)
+        tokenClaimedAmounts[tokenId] = contributionAmount;
         
-        // Transfer the funds back to the lender
-        payable(msg.sender).transfer(userContribution);
-    }
-    
-    /**
-     * @dev Claim returns after loan is repaid
-     * Only callable by lenders if loan is repaid
-     */
-    function claimReturns() external {
-        require(isRepaid, "Loan is not repaid yet");
+        // Update total funded
+        totalFunded -= contributionAmount;
         
-        uint256 userContribution = balanceOf(msg.sender, LOAN_TOKEN_ID);
-        require(userContribution > 0, "No returns to claim");
-        
-        // Calculate returns (principal + interest share)
-        uint256 interestAmount = (loanAmount * interestRate) / 10000;
-        uint256 userInterest = (userContribution * interestAmount) / loanAmount;
-        uint256 totalReturns = userContribution + userInterest;
-        
-        // Burn the tokens
-        _burn(msg.sender, LOAN_TOKEN_ID, userContribution);
-        
-        // Transfer the returns to the lender
-        payable(msg.sender).transfer(totalReturns);
+        // Transfer the contribution back to the supporter
+        // Token remains as a keepsake showing they tried to support this loan
+        require(USDC.transfer(msg.sender, contributionAmount), "Withdrawal transfer failed");
     }
     
     /**
      * @dev Get loan details
-     * @return _loanAmount The total loan amount
-     * @return _interestRate The interest rate in basis points
-     * @return _duration The loan duration in seconds
-     * @return _fundingDeadline The funding deadline timestamp
-     * @return _repaymentDate The repayment date timestamp
-     * @return _description The loan description
-     * @return _imageURI The IPFS URI for the loan NFT image
-     * @return _borrower The borrower address
-     * @return _totalFunded The total amount funded
-     * @return _isActive Whether the loan is active
-     * @return _isRepaid Whether the loan is repaid
      */
     function getLoanDetails() external view returns (
         uint256 _loanAmount,
-        uint256 _interestRate,
-        uint256 _duration,
+        uint256 _thankYouAmount,
+        uint256 _targetRepaymentDate,
         uint256 _fundingDeadline,
-        uint256 _repaymentDate,
         string memory _description,
-        string memory _imageURI,
+        string memory _baseImageURI,
         address _borrower,
         uint256 _totalFunded,
+        uint256 _totalRepaidAmount,
+        uint256 _actualRepaidAmount,
         bool _isActive,
-        bool _isRepaid
+        bool _isFullyRepaid
     ) {
         return (
             loanAmount,
-            interestRate,
-            duration,
+            thankYouAmount,
+            targetRepaymentDate,
             fundingDeadline,
-            repaymentDate,
             description,
-            imageURI,
+            baseImageURI,
             borrower,
             totalFunded,
+            totalRepaidAmount,
+            actualRepaidAmount,
             isActive,
-            isRepaid
+            isFullyRepaid
         );
+    }
+    
+    /**
+     * @dev Get supporter's token IDs
+     * @param supporter Address of the supporter
+     * @return Array of token IDs owned by the supporter
+     */
+    function getSupporterTokens(address supporter) external view returns (uint256[] memory) {
+        return supporterTokens[supporter];
+    }
+    
+    /**
+     * @dev Get repayment health (for frontend display)
+     * @return timeProgress Percentage of time elapsed
+     * @return repaymentProgress Percentage of amount repaid
+     */
+    function getRepaymentHealth() external view returns (uint256 timeProgress, uint256 repaymentProgress) {
+        if (!isActive || isFullyRepaid) {
+            return (0, 0);
+        }
+        
+        uint256 now = block.timestamp;
+        uint256 loanStartTime = fundingDeadline; // Loan starts when funding ends
+        uint256 totalDuration = targetRepaymentDate - loanStartTime;
+        uint256 timeElapsed = now > loanStartTime ? now - loanStartTime : 0;
+        
+        timeProgress = totalDuration > 0 ? (timeElapsed * 100) / totalDuration : 0;
+        timeProgress = timeProgress > 100 ? 100 : timeProgress;
+        
+        repaymentProgress = totalRepaidAmount > 0 ? (actualRepaidAmount * 100) / totalRepaidAmount : 0;
+        
+        return (timeProgress, repaymentProgress);
     }
     
     /**
@@ -223,5 +333,113 @@ contract LndyLoan is ERC1155, Ownable {
         
         // Otherwise, only allow transfers if the loan is active
         require(isActive, "Tokens are not transferable until loan is activated");
+    }
+    
+    // Helper functions
+    function ownerOf(uint256 tokenId) public view returns (address) {
+        return tokenSupporter[tokenId];
+    }
+    
+    function addressToString(address _addr) internal pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_addr)));
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(42);
+        str[0] = '0';
+        str[1] = 'x';
+        for (uint256 i = 0; i < 20; i++) {
+            str[2+i*2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3+i*2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
+    }
+    
+    function base64Encode(bytes memory data) internal pure returns (string memory) {
+        // Simple base64 encoding for metadata URI
+        // In production, you might want to use a more robust implementation
+        string memory table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        
+        if (data.length == 0) return "";
+        
+        string memory result = new string(4 * ((data.length + 2) / 3));
+        bytes memory resultBytes = bytes(result);
+        
+        uint256 i = 0;
+        uint256 j = 0;
+        
+        for (; i + 3 <= data.length; i += 3) {
+            uint256 a = uint256(uint8(data[i]));
+            uint256 b = uint256(uint8(data[i + 1]));
+            uint256 c = uint256(uint8(data[i + 2]));
+            
+            uint256 bitmap = (a << 16) | (b << 8) | c;
+            
+            resultBytes[j++] = bytes1(uint8(bytes(table)[bitmap >> 18]));
+            resultBytes[j++] = bytes1(uint8(bytes(table)[(bitmap >> 12) & 63]));
+            resultBytes[j++] = bytes1(uint8(bytes(table)[(bitmap >> 6) & 63]));
+            resultBytes[j++] = bytes1(uint8(bytes(table)[bitmap & 63]));
+        }
+        
+        return result;
+    }
+    
+    /**
+     * @dev Get claimable amount for a token
+     * @param tokenId The token ID to check
+     * @return claimableAmount How much USDC can be claimed right now
+     */
+    function getClaimableAmount(uint256 tokenId) external view returns (uint256 claimableAmount) {
+        require(tokenId > 0 && tokenId < nextTokenId, "Token ID does not exist");
+        
+        if (!isActive) {
+            return 0;
+        }
+        
+        uint256 contributionAmount = tokenValues[tokenId];
+        uint256 alreadyClaimed = tokenClaimedAmounts[tokenId];
+        
+        // Calculate total earned so far
+        uint256 totalEarned = (contributionAmount * actualRepaidAmount) / loanAmount;
+        
+        return totalEarned > alreadyClaimed ? totalEarned - alreadyClaimed : 0;
+    }
+    
+    /**
+     * @dev Get detailed token information for a supporter
+     * @param supporter Address of the supporter
+     * @return tokenIds Array of token IDs
+     * @return contributionAmounts Array of contribution amounts for each token
+     * @return claimedAmounts Array of amounts already claimed for each token
+     * @return claimableAmounts Array of amounts currently claimable for each token
+     */
+    function getSupporterTokenDetails(address supporter) external view returns (
+        uint256[] memory tokenIds,
+        uint256[] memory contributionAmounts,
+        uint256[] memory claimedAmounts,
+        uint256[] memory claimableAmounts
+    ) {
+        uint256[] memory tokens = supporterTokens[supporter];
+        uint256 length = tokens.length;
+        
+        tokenIds = new uint256[](length);
+        contributionAmounts = new uint256[](length);
+        claimedAmounts = new uint256[](length);
+        claimableAmounts = new uint256[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            uint256 tokenId = tokens[i];
+            tokenIds[i] = tokenId;
+            contributionAmounts[i] = tokenValues[tokenId];
+            claimedAmounts[i] = tokenClaimedAmounts[tokenId];
+            
+            // Calculate claimable amount
+            if (isActive) {
+                uint256 totalEarned = (contributionAmounts[i] * actualRepaidAmount) / loanAmount;
+                claimableAmounts[i] = totalEarned > claimedAmounts[i] ? totalEarned - claimedAmounts[i] : 0;
+            } else {
+                claimableAmounts[i] = 0;
+            }
+        }
+        
+        return (tokenIds, contributionAmounts, claimedAmounts, claimableAmounts);
     }
 }
