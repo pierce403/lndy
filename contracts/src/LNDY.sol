@@ -22,7 +22,7 @@ contract LNDY is ERC20, ERC20Burnable, Ownable {
      * @dev Constructor that mints the initial supply to the deployer
      * @param initialOwner Address that will own the contract and receive initial supply
      */
-    constructor(address initialOwner) ERC20("LNDY", "LNDY") Ownable(initialOwner) {
+    constructor(address initialOwner) ERC20("LNDY", "LNDY Protocol Token") Ownable(initialOwner) {
         _mint(initialOwner, INITIAL_SUPPLY);
     }
     
@@ -52,25 +52,4 @@ contract LNDY is ERC20, ERC20Burnable, Ownable {
     // function burnFrom(address account, uint256 amount) public virtual override {
     //     super.burnFrom(account, amount);
     // }
-    
-    /**
-     * @dev Get token information for display purposes
-     * @return tokenName Token name
-     * @return tokenSymbol Token symbol
-     * @return currentTotalSupply Current total supply
-     * @return tokenDecimals Number of decimals
-     */
-    function getTokenInfo() external view returns (
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint256 currentTotalSupply,
-        uint8 tokenDecimals
-    ) {
-        return (
-            name(),
-            symbol(),
-            totalSupply(),
-            decimals()
-        );
-    }
 } 

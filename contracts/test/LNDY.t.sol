@@ -32,25 +32,11 @@ contract LNDYTest is Test {
     function testTokenCreation() public {
         // Test initial state
         assertEq(token.name(), "LNDY");
-        assertEq(token.symbol(), "LNDY");
+        assertEq(token.symbol(), "LNDY Protocol Token");
         assertEq(token.decimals(), 18);
         assertEq(token.totalSupply(), INITIAL_SUPPLY);
         assertEq(token.balanceOf(owner), INITIAL_SUPPLY);
         assertEq(token.owner(), owner);
-    }
-    
-    function testGetTokenInfo() public {
-        (
-            string memory name,
-            string memory symbol,
-            uint256 totalSupply,
-            uint8 decimals
-        ) = token.getTokenInfo();
-        
-        assertEq(name, "LNDY");
-        assertEq(symbol, "LNDY");
-        assertEq(totalSupply, INITIAL_SUPPLY);
-        assertEq(decimals, 18);
     }
     
     function testTransfer() public {
