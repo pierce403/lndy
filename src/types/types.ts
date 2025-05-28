@@ -6,6 +6,7 @@ export interface Loan {
   fundingDeadline: number;
   repaymentDate: number;
   description: string;
+  imageURI: string;
   borrower: string;
   totalFunded: bigint;
   isActive: boolean;

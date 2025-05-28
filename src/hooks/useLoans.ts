@@ -39,7 +39,7 @@ export const useLoans = () => {
             
             const loanDetails = await readContract({
               contract: loanContract,
-              method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingDeadline, uint256 _repaymentDate, string _description, address _borrower, uint256 _totalFunded, bool _isActive, bool _isRepaid)",
+              method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingDeadline, uint256 _repaymentDate, string _description, string _imageURI, address _borrower, uint256 _totalFunded, bool _isActive, bool _isRepaid)",
               params: [],
             });
             
@@ -51,10 +51,11 @@ export const useLoans = () => {
               fundingDeadline: Number(loanDetails[3]),
               repaymentDate: Number(loanDetails[4]),
               description: loanDetails[5],
-              borrower: loanDetails[6],
-              totalFunded: loanDetails[7],
-              isActive: loanDetails[8],
-              isRepaid: loanDetails[9]
+              imageURI: loanDetails[6],
+              borrower: loanDetails[7],
+              totalFunded: loanDetails[8],
+              isActive: loanDetails[9],
+              isRepaid: loanDetails[10]
             };
           } catch (err) {
             console.error(`Error fetching details for loan ${loanAddress}:`, err);

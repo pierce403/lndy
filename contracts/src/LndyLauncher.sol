@@ -27,13 +27,15 @@ contract LndyLauncher is Ownable {
      * @param _duration Duration of the loan in seconds
      * @param _fundingPeriod Period in seconds during which the loan can be funded
      * @param _description Description of the loan purpose
+     * @param _imageURI IPFS URI for the loan NFT image
      */
     function createLoan(
         uint256 _loanAmount,
         uint256 _interestRate,
         uint256 _duration,
         uint256 _fundingPeriod,
-        string memory _description
+        string memory _description,
+        string memory _imageURI
     ) external returns (address) {
         // Create a new LndyLoan contract
         LndyLoan newLoan = new LndyLoan(
@@ -42,6 +44,7 @@ contract LndyLauncher is Ownable {
             _duration,
             _fundingPeriod,
             _description,
+            _imageURI,
             msg.sender
         );
         

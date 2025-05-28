@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title LndyLoan
@@ -10,6 +11,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * Each token ID represents a specific loan, and the amount of tokens represents the contribution.
  */
 contract LndyLoan is ERC1155, Ownable {
+    using Strings for uint256;
+    
     // Loan details
     uint256 public loanAmount;
     uint256 public interestRate; // in basis points (e.g., 1000 = 10%)
@@ -17,6 +20,7 @@ contract LndyLoan is ERC1155, Ownable {
     uint256 public fundingDeadline;
     uint256 public repaymentDate;
     string public description;
+    string public imageURI; // IPFS URI for the loan NFT image
     address public borrower;
     
     // Loan state
@@ -28,7 +32,7 @@ contract LndyLoan is ERC1155, Ownable {
     uint256 public constant LOAN_TOKEN_ID = 1;
     
     // Events
-    event LoanCreated(address borrower, uint256 amount, uint256 interestRate, uint256 duration);
+    event LoanCreated(address borrower, uint256 amount, uint256 interestRate, uint256 duration, string imageURI);
     event LoanFunded(address funder, uint256 amount);
     event LoanActivated(uint256 totalFunded);
     event LoanRepaid();
@@ -40,6 +44,7 @@ contract LndyLoan is ERC1155, Ownable {
      * @param _duration Duration of the loan in seconds
      * @param _fundingPeriod Period in seconds during which the loan can be funded
      * @param _description Description of the loan purpose
+     * @param _imageURI IPFS URI for the loan NFT image
      * @param _borrower Address of the borrower
      */
     constructor(
@@ -48,6 +53,7 @@ contract LndyLoan is ERC1155, Ownable {
         uint256 _duration,
         uint256 _fundingPeriod,
         string memory _description,
+        string memory _imageURI,
         address _borrower
     ) ERC1155("") Ownable(_borrower) {
         loanAmount = _loanAmount;
@@ -55,9 +61,23 @@ contract LndyLoan is ERC1155, Ownable {
         duration = _duration;
         fundingDeadline = block.timestamp + _fundingPeriod;
         description = _description;
+        imageURI = _imageURI;
         borrower = _borrower;
         
-        emit LoanCreated(_borrower, _loanAmount, _interestRate, _duration);
+        emit LoanCreated(_borrower, _loanAmount, _interestRate, _duration, _imageURI);
+    }
+    
+    /**
+     * @dev Returns the URI for a given token ID
+     * @param tokenId The token ID to get URI for
+     * @return The metadata URI for the token
+     */
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        require(tokenId == LOAN_TOKEN_ID, "Token ID does not exist");
+        
+        // Return the image URI directly for now
+        // In production, you might want to return a proper metadata JSON URI
+        return imageURI;
     }
     
     /**
@@ -150,6 +170,7 @@ contract LndyLoan is ERC1155, Ownable {
      * @return _fundingDeadline The funding deadline timestamp
      * @return _repaymentDate The repayment date timestamp
      * @return _description The loan description
+     * @return _imageURI The IPFS URI for the loan NFT image
      * @return _borrower The borrower address
      * @return _totalFunded The total amount funded
      * @return _isActive Whether the loan is active
@@ -162,6 +183,7 @@ contract LndyLoan is ERC1155, Ownable {
         uint256 _fundingDeadline,
         uint256 _repaymentDate,
         string memory _description,
+        string memory _imageURI,
         address _borrower,
         uint256 _totalFunded,
         bool _isActive,
@@ -174,6 +196,7 @@ contract LndyLoan is ERC1155, Ownable {
             fundingDeadline,
             repaymentDate,
             description,
+            imageURI,
             borrower,
             totalFunded,
             isActive,

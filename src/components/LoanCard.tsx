@@ -62,6 +62,21 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
+      {/* NFT Image */}
+      {loan.imageURI && (
+        <div className="aspect-w-16 aspect-h-9">
+          <img
+            src={loan.imageURI}
+            alt={loan.description}
+            className="w-full h-48 object-cover"
+            onError={(e) => {
+              // Hide image if it fails to load
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+      
       <div className="p-5">
         <div className="flex justify-between items-start">
           <div>

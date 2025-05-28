@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
+import { upload } from "thirdweb/storage";
 import { getLauncherContract } from "../lib/client";
+import { client } from "../lib/client";
 
 const CreateLoan = () => {
   const account = useActiveAccount();
@@ -10,9 +12,40 @@ const CreateLoan = () => {
   const [interestRate, setInterestRate] = useState<string>("1000"); // 10% in basis points
   const [duration, setDuration] = useState<string>("2592000"); // 30 days in seconds
   const [description, setDescription] = useState<string>("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
 
   const { mutate: sendTransaction } = useSendTransaction();
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImageToIPFS = async (file: File): Promise<string> => {
+    try {
+      setIsUploadingImage(true);
+      const uri = await upload({
+        client,
+        files: [file],
+      });
+      return uri;
+    } catch (error) {
+      console.error("Error uploading to IPFS:", error);
+      throw new Error("Failed to upload image to IPFS");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +55,16 @@ const CreateLoan = () => {
       return;
     }
 
+    if (!selectedImage) {
+      alert("Please select an image for your loan NFT");
+      return;
+    }
+
     try {
       setIsCreating(true);
+      
+      // Upload image to IPFS first
+      const imageURI = await uploadImageToIPFS(selectedImage);
       
       const loanAmountWei = BigInt(parseFloat(loanAmount) * 1e18);
       const interestRateBps = parseInt(interestRate);
@@ -34,13 +75,14 @@ const CreateLoan = () => {
       
       const transaction = prepareContractCall({
         contract,
-        method: "function createLoan(uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingPeriod, string _description)",
+        method: "function createLoan(uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingPeriod, string _description, string _imageURI)",
         params: [
           loanAmountWei,
           BigInt(interestRateBps),
           BigInt(durationSeconds),
           BigInt(fundingPeriod),
-          description
+          description,
+          imageURI
         ]
       });
       
@@ -53,6 +95,8 @@ const CreateLoan = () => {
           setInterestRate("1000");
           setDuration("2592000");
           setDescription("");
+          setSelectedImage(null);
+          setImagePreview("");
         },
         onError: (error) => {
           console.error("Contract call failure", error);
@@ -151,16 +195,46 @@ const CreateLoan = () => {
                 Describe the purpose of your loan and why people should fund it
               </p>
             </div>
+
+            <div>
+              <label htmlFor="image" className="block text-sm font-medium text-gray-700">
+                Loan NFT Image
+              </label>
+              <div className="mt-1">
+                <input
+                  type="file"
+                  id="image"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                This image will be used as the graphic for your loan NFT tokens
+              </p>
+              
+              {imagePreview && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                  <img
+                    src={imagePreview}
+                    alt="NFT Preview"
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                  />
+                </div>
+              )}
+            </div>
             
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={isCreating}
+                disabled={isCreating || isUploadingImage}
                 className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                  isCreating ? "opacity-50 cursor-not-allowed" : ""
+                  (isCreating || isUploadingImage) ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isCreating ? "Creating..." : "Create Loan"}
+                {isUploadingImage ? "Uploading Image..." : isCreating ? "Creating..." : "Create Loan"}
               </button>
             </div>
           </div>
