@@ -21,24 +21,24 @@ const Dashboard = () => {
 
   if (!address) {
     return (
-      <div className="text-center p-8 bg-gray-50 rounded-lg">
-        <p className="text-gray-600 mb-4">Please connect your wallet to view your dashboard</p>
+      <div className="text-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <p className="text-gray-600 dark:text-gray-300 mb-4">Please connect your wallet to view your dashboard</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">My Dashboard</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">My Dashboard</h2>
       
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
             <button
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "created"
-                  ? "border-indigo-500 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
               onClick={() => setActiveTab("created")}
             >
@@ -47,8 +47,8 @@ const Dashboard = () => {
             <button
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "invested"
-                  ? "border-indigo-500 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
               onClick={() => setActiveTab("invested")}
             >
@@ -60,12 +60,12 @@ const Dashboard = () => {
       
       {isPageLoading ? (
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 dark:border-indigo-400"></div>
         </div>
       ) : activeTab === "created" ? (
         myLoans.length === 0 ? (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">You haven't created any loans yet</p>
+          <div className="text-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <p className="text-gray-600 dark:text-gray-300">You haven't created any loans yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -76,8 +76,8 @@ const Dashboard = () => {
         )
       ) : (
         myInvestments.length === 0 ? (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">You haven't invested in any loans yet</p>
+          <div className="text-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <p className="text-gray-600 dark:text-gray-300">You haven't invested in any loans yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

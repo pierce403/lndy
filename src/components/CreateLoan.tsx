@@ -210,18 +210,18 @@ const CreateLoan = () => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-2xl font-bold mb-6">Create a New Loan</h2>
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Create a New Loan</h2>
       
       {!address ? (
-        <div className="text-center p-6 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-4">Please connect your wallet to create a loan</p>
+        <div className="text-center p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <p className="text-gray-600 dark:text-gray-300 mb-4">Please connect your wallet to create a loan</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div>
-              <label htmlFor="loanAmount" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="loanAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Loan Amount (USD)
               </label>
               <div className="mt-1">
@@ -230,7 +230,7 @@ const CreateLoan = () => {
                   id="loanAmount"
                   value={loanAmount}
                   onChange={(e) => setLoanAmount(e.target.value)}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                   min="1"
                 />
@@ -238,7 +238,7 @@ const CreateLoan = () => {
             </div>
             
             <div>
-              <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Interest Rate (%)
               </label>
               <div className="mt-1">
@@ -247,19 +247,19 @@ const CreateLoan = () => {
                   id="interestRate"
                   value={parseFloat(interestRate) / 100}
                   onChange={(e) => setInterestRate((parseFloat(e.target.value) * 100).toString())}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                   min="0"
                   step="0.1"
                 />
               </div>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 This is the interest rate you'll pay to lenders
               </p>
             </div>
             
             <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Loan Duration (Days)
               </label>
               <div className="mt-1">
@@ -268,7 +268,7 @@ const CreateLoan = () => {
                   id="duration"
                   value={parseInt(duration) / 86400} // Convert seconds to days
                   onChange={(e) => setDuration((parseInt(e.target.value) * 86400).toString())}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                   min="1"
                 />
@@ -276,7 +276,7 @@ const CreateLoan = () => {
             </div>
             
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Loan Description
               </label>
               <div className="mt-1">
@@ -285,17 +285,17 @@ const CreateLoan = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Describe the purpose of your loan and why people should fund it
               </p>
             </div>
 
             <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Loan NFT Image
               </label>
               <div className="mt-1">
@@ -304,21 +304,21 @@ const CreateLoan = () => {
                   id="image"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 This image will be used as the graphic for your loan NFT tokens
               </p>
               
               {imagePreview && (
                 <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview:</p>
                   <img
                     src={imagePreview}
                     alt="NFT Preview"
-                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                   />
                 </div>
               )}
@@ -328,7 +328,7 @@ const CreateLoan = () => {
               <button
                 type="submit"
                 disabled={isCreating || isUploadingImage}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 ${
                   (isCreating || isUploadingImage) ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >

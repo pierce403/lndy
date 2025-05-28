@@ -112,7 +112,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       {/* NFT Image */}
       {loan.imageURI && (
         <div className="aspect-w-16 aspect-h-9">
@@ -131,15 +131,15 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       <div className="p-5">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-medium text-gray-900 truncate">{loan.description}</h3>
-            <p className="text-sm text-gray-500">By {loan.borrower.substring(0, 6)}...{loan.borrower.substring(38)}</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{loan.description}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">By {loan.borrower.substring(0, 6)}...{loan.borrower.substring(38)}</p>
           </div>
           <div className={`px-2 py-1 text-xs font-medium rounded-full ${
             loan.isRepaid 
-              ? "bg-green-100 text-green-800" 
+              ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" 
               : loan.isActive 
-                ? "bg-blue-100 text-blue-800" 
-                : "bg-yellow-100 text-yellow-800"
+                ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" 
+                : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
           }`}>
             {loan.isRepaid ? "Repaid" : loan.isActive ? "Active" : "Funding"}
           </div>
@@ -147,61 +147,61 @@ const LoanCard = ({ loan }: LoanCardProps) => {
         
         <div className="mt-4">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Amount</span>
-            <span className="font-medium">{formatCurrency(loan.loanAmount)}</span>
+            <span className="text-gray-500 dark:text-gray-400">Amount</span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(loan.loanAmount)}</span>
           </div>
           <div className="flex justify-between text-sm mt-1">
-            <span className="text-gray-500">Interest Rate</span>
-            <span className="font-medium">{loan.interestRate / 100}%</span>
+            <span className="text-gray-500 dark:text-gray-400">Interest Rate</span>
+            <span className="font-medium text-gray-900 dark:text-white">{loan.interestRate / 100}%</span>
           </div>
           <div className="flex justify-between text-sm mt-1">
-            <span className="text-gray-500">Duration</span>
-            <span className="font-medium">{Math.floor(loan.duration / 86400)} days</span>
+            <span className="text-gray-500 dark:text-gray-400">Duration</span>
+            <span className="font-medium text-gray-900 dark:text-white">{Math.floor(loan.duration / 86400)} days</span>
           </div>
           <div className="flex justify-between text-sm mt-1">
-            <span className="text-gray-500">Funding Deadline</span>
-            <span className="font-medium">{formatDate(loan.fundingDeadline)}</span>
+            <span className="text-gray-500 dark:text-gray-400">Funding Deadline</span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatDate(loan.fundingDeadline)}</span>
           </div>
         </div>
         
         <div className="mt-4">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-500">Funding Progress</span>
-            <span className="font-medium">{formatCurrency(loan.totalFunded)} / {formatCurrency(loan.loanAmount)}</span>
+            <span className="text-gray-500 dark:text-gray-400">Funding Progress</span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(loan.totalFunded)} / {formatCurrency(loan.loanAmount)}</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div 
-              className="bg-indigo-600 h-2.5 rounded-full" 
+              className="bg-indigo-600 dark:bg-indigo-500 h-2.5 rounded-full" 
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
-          <div className="text-right text-xs text-gray-500 mt-1">
+          <div className="text-right text-xs text-gray-500 dark:text-gray-400 mt-1">
             {progressPercentage}% funded
           </div>
         </div>
       </div>
       
-      <div className="px-5 py-3 bg-gray-50 border-t border-gray-200">
+      <div className="px-5 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
         {!loan.isActive && !loan.isRepaid && Math.floor(Date.now() / 1000) < loan.fundingDeadline ? (
           <button
             onClick={handleFund}
             disabled={isPending || !address}
-            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700 ${
               isPending || !address ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {isPending ? "Processing..." : "Fund This Loan"}
           </button>
         ) : loan.isActive && !loan.isRepaid ? (
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-600 dark:text-gray-300">
             Loan is active and NFTs are now tradable
           </div>
         ) : loan.isRepaid ? (
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-600 dark:text-gray-300">
             Loan has been repaid
           </div>
         ) : (
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-600 dark:text-gray-300">
             Funding period has ended
           </div>
         )}
