@@ -209,4 +209,19 @@ When adding new features:
 
 ## License
 
-MIT License - see LICENSE file for details. 
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+The Apache License 2.0 is a permissive license that allows you to:
+- Use the software for any purpose
+- Modify the software
+- Distribute the software
+- Distribute modified versions
+- Use the software commercially
+- Use the software privately
+- Use patent claims
+
+The license requires:
+- License and copyright notice inclusion
+- State changes
+- Include a NOTICE file if applicable
+- Include a copy of the license
