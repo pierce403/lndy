@@ -1,0 +1,25 @@
+# Foundry build artifacts
+out/
+cache/
+broadcast/
+
+# Dependencies (managed by Foundry)
+lib/
+
+# Environment variables
+.env
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 

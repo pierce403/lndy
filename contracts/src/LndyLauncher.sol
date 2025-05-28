@@ -37,6 +37,12 @@ contract LndyLauncher is Ownable {
         string memory _description,
         string memory _baseImageURI
     ) external returns (address) {
+        // Validate parameters
+        require(_loanAmount > 0, "Loan amount must be greater than 0");
+        require(_targetRepaymentDate > block.timestamp, "Target repayment date must be in the future");
+        require(_fundingPeriod > 0, "Funding period must be greater than 0");
+        require(bytes(_description).length > 0, "Description cannot be empty");
+        
         // Create a new LndyLoan contract
         LndyLoan newLoan = new LndyLoan(
             _loanAmount,

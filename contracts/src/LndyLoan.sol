@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title LndyLoan
@@ -121,7 +121,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
         // Create JSON metadata for OpenSea
         string memory json = string(abi.encodePacked(
             '{"name": "LNDY Support Token #', tokenId.toString(),
-            '", "description": "', description, ' - This NFT represents your contribution to this social loan and serves as a permanent record of your support.",
+            '", "description": "', description, ' - This NFT represents your contribution to this social loan and serves as a permanent record of your support.',
             '", "image": "', baseImageURI,
             '", "attributes": [',
             '{"trait_type": "Contribution Amount", "value": ', (value / 1e6).toString(), ', "display_type": "number"},',
@@ -141,7 +141,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
      * @dev Support the loan with USDC
      * @param _amount Amount of USDC to contribute (with 6 decimals)
      */
-    function supportLoan(uint256 _amount) external nonReentrant {
+    function supportLoan(uint256 _amount) external virtual nonReentrant {
         require(block.timestamp < fundingDeadline, "Funding period has ended");
         require(!isActive, "Loan is already fully funded");
         require(_amount > 0, "Amount must be greater than 0");
@@ -178,7 +178,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
      * @dev Make a repayment on the loan (callable by borrower)
      * @param _amount Amount to repay in USDC
      */
-    function makeRepayment(uint256 _amount) external nonReentrant {
+    function makeRepayment(uint256 _amount) external virtual nonReentrant {
         require(msg.sender == borrower, "Only borrower can make repayments");
         require(isActive, "Loan is not active");
         require(!isFullyRepaid, "Loan is already fully repaid");
@@ -201,7 +201,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
      * @dev Claim available returns at any time (doesn't need to wait for full repayment)
      * @param tokenId The token ID to claim returns for
      */
-    function claimReturns(uint256 tokenId) external nonReentrant {
+    function claimReturns(uint256 tokenId) external virtual nonReentrant {
         require(isActive, "Loan is not active yet");
         require(msg.sender == ownerOf(tokenId), "You don't own this token");
         require(balanceOf(msg.sender, tokenId) > 0, "No tokens to claim for");
@@ -229,7 +229,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
      * @dev Withdraw funds if loan is not activated before deadline
      * @param tokenId The token ID to withdraw funds for
      */
-    function withdrawFunds(uint256 tokenId) external nonReentrant {
+    function withdrawFunds(uint256 tokenId) external virtual nonReentrant {
         require(block.timestamp > fundingDeadline, "Funding period has not ended");
         require(!isActive, "Loan is already active");
         require(msg.sender == ownerOf(tokenId), "You don't own this token");
@@ -301,10 +301,10 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
             return (0, 0);
         }
         
-        uint256 now = block.timestamp;
+        uint256 currentTime = block.timestamp;
         uint256 loanStartTime = fundingDeadline; // Loan starts when funding ends
         uint256 totalDuration = targetRepaymentDate - loanStartTime;
-        uint256 timeElapsed = now > loanStartTime ? now - loanStartTime : 0;
+        uint256 timeElapsed = currentTime > loanStartTime ? currentTime - loanStartTime : 0;
         
         timeProgress = totalDuration > 0 ? (timeElapsed * 100) / totalDuration : 0;
         timeProgress = timeProgress > 100 ? 100 : timeProgress;
