@@ -46,7 +46,7 @@ function App() {
                 chain={sepolia}
               />
             </div>
-            <p className="mt-2 text-sm text-gray-600">Social lending powered by blockchain</p>
+            <p className="mt-2 text-sm text-gray-600">Social lending powered by Ethereum</p>
           </div>
         </header>
 
