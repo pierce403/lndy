@@ -12,15 +12,22 @@ export const useLoans = () => {
 
   useEffect(() => {
     const fetchLoanDetails = async () => {
+      console.log("🔍 useLoans: Starting loan fetch process...");
+      console.log("📍 useLoans: Launcher contract address:", launcherAddress);
+      
       if (!launcherAddress) {
+        console.error("❌ useLoans: Launcher contract address not configured");
         setError("Launcher contract address not configured");
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log("🔗 useLoans: Getting launcher contract instance...");
         const launcherContract = getLauncherContract();
+        console.log("✅ useLoans: Launcher contract instance created:", launcherContract);
         
+        console.log("📞 useLoans: Calling getAllLoans() on launcher contract...");
         // Read loan addresses from the launcher contract
         const loanAddresses = await readContract({
           contract: launcherContract,
@@ -28,22 +35,32 @@ export const useLoans = () => {
           params: [],
         });
 
+        console.log("📋 useLoans: Received loan addresses:", loanAddresses);
+        console.log("📊 useLoans: Total number of loans found:", loanAddresses?.length || 0);
+
         if (!loanAddresses || loanAddresses.length === 0) {
+          console.log("📭 useLoans: No loans found, setting empty array");
           setIsLoading(false);
           return;
         }
 
-        const loanDetailsPromises = loanAddresses.map(async (loanAddress: string) => {
+        console.log("🔄 useLoans: Starting to fetch details for each loan...");
+        const loanDetailsPromises = loanAddresses.map(async (loanAddress: string, index: number) => {
           try {
+            console.log(`🏦 useLoans: [${index + 1}/${loanAddresses.length}] Processing loan at address: ${loanAddress}`);
             const loanContract = getLoanContract(loanAddress);
+            console.log(`🔗 useLoans: [${index + 1}] Created contract instance for loan ${loanAddress}`);
             
+            console.log(`📞 useLoans: [${index + 1}] Calling getLoanDetails() for loan ${loanAddress}...`);
             const loanDetails = await readContract({
               contract: loanContract,
               method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingDeadline, uint256 _repaymentDate, string _description, string _imageURI, address _borrower, uint256 _totalFunded, bool _isActive, bool _isRepaid)",
               params: [],
             });
             
-            return {
+            console.log(`📊 useLoans: [${index + 1}] Raw loan details for ${loanAddress}:`, loanDetails);
+            
+            const processedLoan = {
               address: loanAddress,
               loanAmount: loanDetails[0],
               interestRate: Number(loanDetails[1]),
@@ -57,18 +74,41 @@ export const useLoans = () => {
               isActive: loanDetails[9],
               isRepaid: loanDetails[10]
             };
+            
+            console.log(`✅ useLoans: [${index + 1}] Processed loan data for ${loanAddress}:`, processedLoan);
+            console.log(`💰 useLoans: [${index + 1}] Loan amount: ${Number(processedLoan.loanAmount) / 1e18} ETH`);
+            console.log(`📈 useLoans: [${index + 1}] Interest rate: ${processedLoan.interestRate / 100}%`);
+            console.log(`⏱️ useLoans: [${index + 1}] Duration: ${processedLoan.duration / 86400} days`);
+            console.log(`🖼️ useLoans: [${index + 1}] Image URI: ${processedLoan.imageURI}`);
+            console.log(`👤 useLoans: [${index + 1}] Borrower: ${processedLoan.borrower}`);
+            console.log(`💸 useLoans: [${index + 1}] Total funded: ${Number(processedLoan.totalFunded) / 1e18} ETH`);
+            console.log(`🔄 useLoans: [${index + 1}] Status - Active: ${processedLoan.isActive}, Repaid: ${processedLoan.isRepaid}`);
+            
+            return processedLoan;
           } catch (err) {
-            console.error(`Error fetching details for loan ${loanAddress}:`, err);
+            console.error(`❌ useLoans: [${index + 1}] Error fetching details for loan ${loanAddress}:`, err);
             return null;
           }
         });
 
+        console.log("⏳ useLoans: Waiting for all loan details to be fetched...");
         const loanDetails = await Promise.all(loanDetailsPromises);
-        setLoans(loanDetails.filter(Boolean) as Loan[]);
+        const validLoans = loanDetails.filter(Boolean) as Loan[];
+        
+        console.log("🎉 useLoans: All loan details fetched successfully!");
+        console.log("📊 useLoans: Valid loans count:", validLoans.length);
+        console.log("📋 useLoans: Final processed loans array:", validLoans);
+        
+        setLoans(validLoans);
       } catch (error) {
-        console.error("Error fetching loan details:", error);
+        console.error("💥 useLoans: Critical error during loan fetching:", error);
+        console.error("🔍 useLoans: Error details:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace',
+        });
         setError("Failed to fetch loans");
       } finally {
+        console.log("🏁 useLoans: Fetch process completed, setting loading to false");
         setIsLoading(false);
       }
     };
@@ -76,5 +116,6 @@ export const useLoans = () => {
     fetchLoanDetails();
   }, [launcherAddress]);
 
+  console.log("📤 useLoans: Returning state - Loans:", loans.length, "Loading:", isLoading, "Error:", error);
   return { loans, isLoading, error };
 };

@@ -1,5 +1,5 @@
 import { createThirdwebClient, getContract } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
+import { mainnet, sepolia } from "thirdweb/chains";
 
 export const client = createThirdwebClient({
   clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID || "",
@@ -12,7 +12,7 @@ export const getLauncherContract = () => {
   }
   return getContract({
     client,
-    chain: sepolia,
+    chain: mainnet,
     address: contractAddress,
   });
 };
@@ -20,7 +20,7 @@ export const getLauncherContract = () => {
 export const getLoanContract = (loanAddress: string) => {
   return getContract({
     client,
-    chain: sepolia,
+    chain: mainnet,
     address: loanAddress,
   });
 };

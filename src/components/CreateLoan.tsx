@@ -33,16 +33,46 @@ const CreateLoan = () => {
 
   const uploadImageToIPFS = async (file: File): Promise<string> => {
     try {
+      console.log("🚀 CreateLoan: Starting IPFS upload process...");
+      console.log("📄 CreateLoan: File details:", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: new Date(file.lastModified).toISOString()
+      });
+      
       setIsUploadingImage(true);
+      console.log("⏳ CreateLoan: Set uploading state to true");
+      
+      console.log("☁️ CreateLoan: Calling Thirdweb upload function...");
+      console.log("🔗 CreateLoan: Using client:", client);
+      
       const uri = await upload({
         client,
         files: [file],
       });
+      
+      console.log("✅ CreateLoan: IPFS upload successful!");
+      console.log("🔗 CreateLoan: Returned URI:", uri);
+      console.log("📊 CreateLoan: Upload stats:", {
+        originalFileName: file.name,
+        uploadedURI: uri,
+        uploadTime: new Date().toISOString()
+      });
+      
       return uri;
     } catch (error) {
-      console.error("Error uploading to IPFS:", error);
+      console.error("💥 CreateLoan: IPFS upload failed!");
+      console.error("❌ CreateLoan: Upload error details:", error);
+      console.error("🔍 CreateLoan: Error breakdown:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        fileName: file.name,
+        fileSize: file.size
+      });
       throw new Error("Failed to upload image to IPFS");
     } finally {
+      console.log("🏁 CreateLoan: IPFS upload process completed, resetting upload state");
       setIsUploadingImage(false);
     }
   };
@@ -50,29 +80,62 @@ const CreateLoan = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("🎯 CreateLoan: Form submission started");
+    console.log("👤 CreateLoan: Current user address:", address);
+    
     if (!address) {
+      console.warn("⚠️ CreateLoan: No wallet connected, showing alert");
       alert("Please connect your wallet first");
       return;
     }
 
     if (!selectedImage) {
+      console.warn("⚠️ CreateLoan: No image selected, showing alert");
       alert("Please select an image for your loan NFT");
       return;
     }
 
     try {
+      console.log("🚀 CreateLoan: Starting loan creation process...");
+      console.log("📋 CreateLoan: Form data collected:", {
+        loanAmount,
+        interestRate,
+        duration,
+        description: description.substring(0, 50) + (description.length > 50 ? "..." : ""),
+        imageFileName: selectedImage.name,
+        userAddress: address
+      });
+      
       setIsCreating(true);
+      console.log("⏳ CreateLoan: Set creating state to true");
       
       // Upload image to IPFS first
+      console.log("📸 CreateLoan: Starting image upload to IPFS...");
       const imageURI = await uploadImageToIPFS(selectedImage);
+      console.log("✅ CreateLoan: Image upload completed, URI:", imageURI);
       
+      console.log("🔢 CreateLoan: Processing loan parameters...");
       const loanAmountWei = BigInt(parseFloat(loanAmount) * 1e18);
       const interestRateBps = parseInt(interestRate);
       const durationSeconds = parseInt(duration);
       const fundingPeriod = 604800; // 1 week in seconds
       
-      const contract = getLauncherContract();
+      console.log("📊 CreateLoan: Processed parameters:", {
+        loanAmountWei: loanAmountWei.toString(),
+        loanAmountETH: parseFloat(loanAmount),
+        interestRateBps,
+        interestRatePercent: interestRateBps / 100,
+        durationSeconds,
+        durationDays: durationSeconds / 86400,
+        fundingPeriod,
+        fundingPeriodDays: fundingPeriod / 86400
+      });
       
+      console.log("🔗 CreateLoan: Getting launcher contract instance...");
+      const contract = getLauncherContract();
+      console.log("✅ CreateLoan: Launcher contract obtained:", contract);
+      
+      console.log("📝 CreateLoan: Preparing contract call...");
       const transaction = prepareContractCall({
         contract,
         method: "function createLoan(uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingPeriod, string _description, string _imageURI)",
@@ -86,27 +149,62 @@ const CreateLoan = () => {
         ]
       });
       
+      console.log("🔗 CreateLoan: Transaction prepared:", transaction);
+      console.log("📤 CreateLoan: Transaction parameters:", {
+        loanAmount: loanAmountWei.toString(),
+        interestRate: interestRateBps,
+        duration: durationSeconds,
+        fundingPeriod: fundingPeriod,
+        description,
+        imageURI
+      });
+      
+      console.log("🚀 CreateLoan: Sending transaction...");
       sendTransaction(transaction, {
         onSuccess: (result) => {
-          console.info("Contract call success", result);
+          console.log("🎉 CreateLoan: Transaction successful!");
+          console.log("✅ CreateLoan: Transaction result:", result);
+          console.log("🔗 CreateLoan: Transaction hash:", result.transactionHash);
+          console.log("📊 CreateLoan: Final loan data:", {
+            amount: parseFloat(loanAmount) + " ETH",
+            interest: (interestRateBps / 100) + "%",
+            duration: (durationSeconds / 86400) + " days",
+            imageURI,
+            creator: address
+          });
+          
           alert("Loan created successfully!");
           
+          console.log("🔄 CreateLoan: Resetting form fields...");
           setLoanAmount("40000");
           setInterestRate("1000");
           setDuration("2592000");
           setDescription("");
           setSelectedImage(null);
           setImagePreview("");
+          console.log("✅ CreateLoan: Form reset completed");
         },
         onError: (error) => {
-          console.error("Contract call failure", error);
+          console.error("💥 CreateLoan: Transaction failed!");
+          console.error("❌ CreateLoan: Transaction error:", error);
+          console.error("🔍 CreateLoan: Error details:", {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : 'No stack trace',
+          });
           alert("Failed to create loan. See console for details.");
         }
       });
     } catch (err) {
-      console.error("Contract call failure", err);
+      console.error("💥 CreateLoan: Critical error in loan creation process!");
+      console.error("❌ CreateLoan: Error details:", err);
+      console.error("🔍 CreateLoan: Error breakdown:", {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        formData: { loanAmount, interestRate, duration, description: description.length }
+      });
       alert("Failed to create loan. See console for details.");
     } finally {
+      console.log("🏁 CreateLoan: Loan creation process completed, resetting creating state");
       setIsCreating(false);
     }
   };

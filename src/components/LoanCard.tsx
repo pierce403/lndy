@@ -28,15 +28,33 @@ const LoanCard = ({ loan }: LoanCardProps) => {
   };
 
   const handleFund = async () => {
+    console.log("💰 LoanCard: Fund button clicked");
+    console.log("🏦 LoanCard: Loan being funded:", {
+      address: loan.address,
+      description: loan.description,
+      borrower: loan.borrower,
+      loanAmount: Number(loan.loanAmount) / 1e18 + " ETH",
+      totalFunded: Number(loan.totalFunded) / 1e18 + " ETH",
+      progressPercentage: progressPercentage + "%"
+    });
+    console.log("👤 LoanCard: Current user address:", address);
+    
     if (!address) {
+      console.warn("⚠️ LoanCard: No wallet connected, showing alert");
       alert("Please connect your wallet first");
       return;
     }
 
     try {
+      console.log("🚀 LoanCard: Starting loan funding process...");
       const fundAmount = BigInt(1e18); // 1 ETH equivalent
-      const contract = getLoanContract(loan.address);
+      console.log("💸 LoanCard: Funding amount:", Number(fundAmount) / 1e18, "ETH");
       
+      console.log("🔗 LoanCard: Getting loan contract instance...");
+      const contract = getLoanContract(loan.address);
+      console.log("✅ LoanCard: Loan contract obtained:", contract);
+      
+      console.log("📝 LoanCard: Preparing funding transaction...");
       const transaction = prepareContractCall({
         contract,
         method: "function fundLoan(uint256 amount) payable",
@@ -44,18 +62,51 @@ const LoanCard = ({ loan }: LoanCardProps) => {
         value: fundAmount
       });
       
+      console.log("🔗 LoanCard: Transaction prepared:", transaction);
+      console.log("📤 LoanCard: Transaction parameters:", {
+        contractAddress: loan.address,
+        fundAmount: fundAmount.toString(),
+        fundAmountETH: Number(fundAmount) / 1e18,
+        value: fundAmount.toString()
+      });
+      
+      console.log("🚀 LoanCard: Sending funding transaction...");
       sendTransaction(transaction, {
         onSuccess: (result) => {
-          console.info("Funding success", result);
+          console.log("🎉 LoanCard: Funding transaction successful!");
+          console.log("✅ LoanCard: Transaction result:", result);
+          console.log("🔗 LoanCard: Transaction hash:", result.transactionHash);
+          console.log("📊 LoanCard: Funding details:", {
+            loanAddress: loan.address,
+            funder: address,
+            amountFunded: Number(fundAmount) / 1e18 + " ETH",
+            previousFunding: Number(loan.totalFunded) / 1e18 + " ETH",
+            timestamp: new Date().toISOString()
+          });
+          
           alert("Loan funded successfully!");
         },
         onError: (error) => {
-          console.error("Error funding loan:", error);
+          console.error("💥 LoanCard: Funding transaction failed!");
+          console.error("❌ LoanCard: Transaction error:", error);
+          console.error("🔍 LoanCard: Error details:", {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : 'No stack trace',
+            loanAddress: loan.address,
+            fundAmount: Number(fundAmount) / 1e18 + " ETH"
+          });
           alert("Failed to fund loan. See console for details.");
         }
       });
     } catch (err) {
-      console.error("Error funding loan:", err);
+      console.error("💥 LoanCard: Critical error in funding process!");
+      console.error("❌ LoanCard: Error details:", err);
+      console.error("🔍 LoanCard: Error breakdown:", {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        loanAddress: loan.address,
+        userAddress: address
+      });
       alert("Failed to fund loan. See console for details.");
     }
   };
