@@ -1,108 +1,241 @@
 # LNDY - Social Lending Platform
 
-LNDY is a decentralized social lending platform that allows users to request loans with custom terms and have their social network fund them by minting ERC-1155 NFTs. Once a loan is fully funded, the NFTs become tradable.
+LNDY is a decentralized social lending platform that allows users to request loans with custom terms and have their social network fund them by minting ERC-1155 NFTs. Each contribution creates a unique NFT that serves as both a badge of social impact and a claim on returns. Supporters can claim returns incrementally as repayments are made, and NFTs remain as permanent keepsakes.
 
 ## Features
 
-- Create loan requests with custom terms (amount, interest rate, duration)
-- Fund loans by minting NFTs
-- View and manage your created loans and investments
-- Trade NFTs once loans are activated
-- Repay loans and claim returns
+### 🎯 Social Lending
+- Create loan requests with social-friendly terms ("Thank You Amount" instead of interest)
+- Community funding through NFT purchases
+- Target repayment timeframes instead of strict deadlines
+- Repayment health tracking (time vs. progress)
+
+### 🖼️ NFT Innovations  
+- Each contribution gets a unique ERC-1155 token with distinct value
+- Rich OpenSea-compatible metadata showing contribution impact
+- Permanent keepsakes (NFTs never burn, even after completion)
+- Progressive status tracking: Funding → Active → Completed
+
+### 💰 Flexible Returns
+- **Partial Claims**: Claim returns incrementally as repayments come in
+- **USDC-based**: All transactions in USDC on Base network
+- **Failed Funding Protection**: Withdraw contributions if funding fails
+- **Social Accountability**: Visual progress tracking without penalties
+
+### 🔥 LNDY Protocol Token
+- **ERC20 Token**: 10 million total supply with burn functionality
+- **Deflationary**: Users can permanently burn tokens to reduce supply
+- **Governance Ready**: Owned contract for future DAO implementation
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript, Tailwind CSS
-- **Blockchain Integration**: thirdweb SDK
-- **Smart Contracts**: Solidity (ERC-1155)
-- **Network**: Base
+- **Frontend**: React, TypeScript, Tailwind CSS, Vite
+- **Blockchain**: Base Network (Ethereum L2)
+- **Smart Contracts**: Solidity with OpenZeppelin
+- **Token Standard**: ERC-1155 (loan NFTs) + ERC20 (LNDY token)
+- **Currency**: USDC (6 decimals)
+- **Testing**: Foundry/Forge with comprehensive test suites
+- **Development**: thirdweb SDK for Web3 integration
 
 ## Project Structure
 
 ```
-lndy-app/
-├── contracts/           # Smart contracts
-│   └── src/
-│       ├── LndyLauncher.sol  # Factory contract for creating loans
-│       └── LndyLoan.sol      # ERC-1155 contract for loan NFTs
-└── frontend/            # React frontend
-    ├── public/
-    └── src/
-        ├── components/  # React components
-        ├── hooks/       # Custom React hooks
-        └── types/       # TypeScript type definitions
+lndy/
+├── contracts/                    # Smart contract infrastructure
+│   ├── src/
+│   │   ├── LndyLauncher.sol     # Factory contract for creating loans
+│   │   ├── LndyLoan.sol         # ERC-1155 loan NFT contract with USDC
+│   │   └── LNDY.sol             # ERC20 protocol token (burnable)
+│   ├── test/
+│   │   ├── LndyLauncher.t.sol   # Factory contract tests
+│   │   ├── LndyLoan.t.sol       # Comprehensive loan tests (16 tests)
+│   │   ├── LNDY.t.sol           # Token contract tests (12 tests)
+│   │   └── mocks/
+│   │       └── MockUSDC.sol     # Mock USDC for testing
+│   ├── foundry.toml             # Foundry configuration
+│   ├── setup.sh                 # Automated setup script
+│   └── README.md                # Detailed testing documentation
+├── src/                         # React frontend
+│   ├── components/              # React components
+│   ├── hooks/                   # Custom React hooks  
+│   ├── lib/                     # Web3 client configuration
+│   └── types/                   # TypeScript definitions
+├── env.template                 # Environment template
+└── MIGRATION_TO_BASE.md         # Base network migration guide
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js and npm
-- Metamask or another Web3 wallet
-- Base network configured in your wallet
+- **Node.js** and npm/yarn
+- **Foundry** for smart contract development and testing
+- **MetaMask** or another Web3 wallet
+- **Base network** configured in your wallet
+- **USDC on Base** for testing loan functionality
 
-### Installation
+### Quick Start
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd lndy-app
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/pierce403/lndy.git
+   cd lndy
    ```
 
-2. Install frontend dependencies:
-   ```
+2. **Install frontend dependencies:**
+   ```bash
    npm install
    ```
 
-3. Configure your environment variables:
+3. **Set up smart contract testing:**
+   ```bash
+   cd contracts
+   chmod +x setup.sh
+   ./setup.sh
    ```
-   cp env.template .env
-   ```
-   
-   Then edit `.env` with your actual values:
-   - Get your Thirdweb Client ID from [Thirdweb Dashboard](https://thirdweb.com/dashboard)
-   - Deploy contracts to Base and add the launcher contract address
 
-4. Start the development server:
+4. **Run all tests:**
+   ```bash
+   forge test
    ```
+
+5. **Configure environment:**
+   ```bash
+   cp env.template .env
+   # Edit .env with your values
+   ```
+
+6. **Start development server:**
+   ```bash
    npm run dev
    ```
 
-5. Open your browser and navigate to `http://localhost:5173`
+### Smart Contract Development
 
-### Smart Contract Deployment
+The contracts use **Foundry** for development and testing:
 
-1. Install thirdweb CLI:
-   ```
-   npm install -g @thirdweb-dev/cli
-   ```
+```bash
+cd contracts
 
-2. Deploy the contracts to Base:
-   ```
-   cd contracts
-   thirdweb deploy
-   ```
+# Compile contracts
+forge build
 
-3. Follow the prompts to deploy your contracts to Base network
-4. Update the `.env` file with your deployed contract addresses
+# Run all tests (29 tests total)
+forge test
+
+# Run with gas reporting
+forge test --gas-report
+
+# Run specific test
+forge test --match-contract LNDYTest
+
+# Generate coverage report
+forge coverage
+```
+
+### Contract Addresses (Base Mainnet)
+
+- **USDC**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- **LNDY Token**: *Deploy using Foundry*
+- **LndyLauncher**: *Deploy using Foundry*
 
 ### Base Network Setup
 
-To use this app, you'll need to:
+1. **Add Base to MetaMask:**
+   - Network Name: Base
+   - RPC URL: `https://mainnet.base.org`
+   - Chain ID: `8453`
+   - Currency Symbol: `ETH`
 
-1. Add Base network to your wallet (if not already added)
-2. Get some ETH on Base for transaction fees
-3. Connect your wallet and ensure you're on the Base network
+2. **Get USDC on Base:**
+   - Bridge from Ethereum mainnet
+   - Use Base bridge: https://bridge.base.org
+   - Buy directly on Base DEXs
 
-## Usage
+## Key Contracts
 
-1. Connect your wallet using the "Connect Wallet" button
-2. Ensure you're connected to Base network
-3. Create a loan by filling out the form in the "Create Loan" tab
-4. Browse available loans in the "Browse Loans" tab
-5. Fund loans by clicking the "Fund This Loan" button
-6. View your created loans and investments in the "My Dashboard" tab
+### 🏭 **LndyLauncher.sol**
+Factory contract that creates and tracks loan instances.
+
+### 🏠 **LndyLoan.sol**  
+Core loan contract featuring:
+- USDC-based lending with automatic fund transfer
+- Unique NFT minting per contribution
+- Partial repayment and incremental claiming
+- Rich metadata for OpenSea integration
+- Failed funding protection with withdrawals
+
+### 🪙 **LNDY.sol**
+Protocol token with:
+- 10M initial supply minted to deployer
+- Burn functionality to reduce total supply
+- Standard ERC20 compatibility
+
+## Testing
+
+Comprehensive test coverage with **29 passing tests**:
+
+- ✅ **LndyLauncher**: 4 tests (factory functionality)
+- ✅ **LndyLoan**: 16 tests (funding, repayment, claims, NFTs)  
+- ✅ **LNDY**: 12 tests (transfers, burns, edge cases)
+
+Run tests: `cd contracts && forge test`
+
+## Deployment
+
+### Using Foundry (Recommended)
+
+```bash
+# Deploy to Base mainnet
+forge create src/LNDY.sol:LNDY \
+  --private-key $PRIVATE_KEY \
+  --rpc-url https://mainnet.base.org \
+  --constructor-args $OWNER_ADDRESS
+
+forge create src/LndyLauncher.sol:LndyLauncher \
+  --private-key $PRIVATE_KEY \
+  --rpc-url https://mainnet.base.org
+```
+
+### Using thirdweb
+
+```bash
+cd contracts
+thirdweb deploy
+```
+
+## Social Features
+
+### 🤝 **Social-First Design**
+- "Thank You Amount" instead of "Interest Rate"  
+- "Target Repayment Timeframe" instead of "Loan Duration"
+- Community support through NFT collection
+- Repayment health indicators (Green/Yellow/Red)
+
+### 🎮 **Gamification**
+- NFT badges showing social impact
+- Supporter portfolios of social good
+- "I helped fund this person's dream" collectibles
+- Progressive status evolution in metadata
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Write tests for new functionality
+4. Ensure all tests pass: `forge test`
+5. Commit changes: `git commit -m "Add feature"`
+6. Push to branch: `git push origin feature-name`
+7. Submit a pull request
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Links
+
+- **Website**: [LNDY.org](https://lndy.org) 
+- **Base Network**: [base.org](https://base.org)
+- **OpenSea**: NFTs visible once deployed
+- **Documentation**: See `contracts/README.md` for detailed testing docs
+
