@@ -3,6 +3,7 @@ import { Loan } from "../types/types";
 import { useState, useEffect } from "react";
 import { readContract } from "thirdweb";
 import { getLoanContract } from "../lib/client";
+import { lookupFarcasterProfile, getFarcasterProfileUrl, FarcasterProfile } from "../utils/farcaster";
 import Modal from "./Modal";
 import FundingModal from "./FundingModal";
 import RepaymentModal from "./RepaymentModal";
@@ -21,6 +22,8 @@ const LoanCard = ({ loan }: LoanCardProps) => {
   const [showRepaymentSuccessModal, setShowRepaymentSuccessModal] = useState<boolean>(false);
   const [actualRepaidAmount, setActualRepaidAmount] = useState<number>(0);
   const [totalRepaidAmount, setTotalRepaidAmount] = useState<number>(0);
+  const [farcasterProfile, setFarcasterProfile] = useState<FarcasterProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
   const [fundingSuccessDetails, setFundingSuccessDetails] = useState<{
     transactionHash: string;
     amountFunded: string;
@@ -55,6 +58,23 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
     fetchRepaymentData();
   }, [loan.address, loan.isActive, loan.isRepaid]);
+
+  // Fetch Farcaster profile for borrower
+  useEffect(() => {
+    const fetchFarcasterProfile = async () => {
+      setIsLoadingProfile(true);
+      try {
+        const profile = await lookupFarcasterProfile(loan.borrower);
+        setFarcasterProfile(profile);
+      } catch (error) {
+        console.error("❌ LoanCard: Failed to fetch Farcaster profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchFarcasterProfile();
+  }, [loan.borrower]);
 
   const progressPercentage = loan.loanAmount > 0 
     ? Number((loan.totalFunded * BigInt(100)) / loan.loanAmount)
@@ -156,14 +176,48 @@ const LoanCard = ({ loan }: LoanCardProps) => {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{loan.description}</h3>
-            <a 
-              href={`https://basescan.org/address/${loan.borrower}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
-            >
-              By {loan.borrower.substring(0, 6)}...{loan.borrower.substring(38)}
-            </a>
+            {/* Farcaster Profile Display */}
+            {isLoadingProfile ? (
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <svg className="animate-spin -ml-1 mr-2 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading profile...
+              </div>
+            ) : farcasterProfile ? (
+              <div className="flex items-center space-x-2">
+                {farcasterProfile.pfpUrl && (
+                  <img 
+                    src={farcasterProfile.pfpUrl} 
+                    alt={farcasterProfile.displayName || farcasterProfile.username}
+                    className="w-5 h-5 rounded-full"
+                  />
+                )}
+                <a 
+                  href={getFarcasterProfileUrl(farcasterProfile.username)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors font-medium"
+                >
+                  @{farcasterProfile.username}
+                  {farcasterProfile.displayName && farcasterProfile.displayName !== farcasterProfile.username && (
+                    <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
+                      ({farcasterProfile.displayName})
+                    </span>
+                  )}
+                </a>
+              </div>
+            ) : (
+              <a 
+                href={`https://basescan.org/address/${loan.borrower}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+              >
+                By {loan.borrower.substring(0, 6)}...{loan.borrower.substring(38)}
+              </a>
+            )}
           </div>
           <div className={`px-2 py-1 text-xs font-medium rounded-full ${
             loan.isRepaid 
