@@ -92,49 +92,27 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
         
         uint256 value = tokenValues[tokenId];
         uint256 claimedAmount = tokenClaimedAmounts[tokenId];
-        address supporter = tokenSupporter[tokenId];
-        
-        // Calculate available to claim and completion status
-        uint256 totalEarned = isActive ? (value * actualRepaidAmount) / loanAmount : 0;
-        uint256 finalTotalOwed = isActive ? (value * totalRepaidAmount) / loanAmount : 0;
-        uint256 availableToClaim = totalEarned > claimedAmount ? totalEarned - claimedAmount : 0;
         
         // Determine token status
         string memory tokenStatus;
         if (!isActive && block.timestamp > fundingDeadline) {
-            // Loan funding failed
-            if (claimedAmount > 0) {
-                tokenStatus = "Funding Failed - Withdrawn";
-            } else {
-                tokenStatus = "Funding Failed - Withdraw Available";
-            }
+            tokenStatus = claimedAmount > 0 ? "Funding Failed - Withdrawn" : "Funding Failed - Withdraw Available";
         } else if (!isActive) {
             tokenStatus = "Funding";
-        } else if (isFullyRepaid && claimedAmount >= finalTotalOwed) {
-            tokenStatus = "Completed";
         } else if (isFullyRepaid) {
-            tokenStatus = "Repaid - Claim Available";
+            tokenStatus = "Completed";
         } else {
             tokenStatus = "Active";
         }
         
-        // Create JSON metadata for OpenSea
-        string memory json = string(abi.encodePacked(
-            '{"name": "LNDY Support Token #', tokenId.toString(),
-            '", "description": "', description, ' - This NFT represents your contribution to this social loan and serves as a permanent record of your support.',
-            '", "image": "', baseImageURI,
-            '", "attributes": [',
-            '{"trait_type": "Contribution Amount", "value": ', (value / 1e6).toString(), ', "display_type": "number"},',
-            '{"trait_type": "Claimed So Far", "value": ', (claimedAmount / 1e6).toString(), ', "display_type": "number"},',
-            '{"trait_type": "Available to Claim", "value": ', (availableToClaim / 1e6).toString(), ', "display_type": "number"},',
-            '{"trait_type": "Token Status", "value": "', tokenStatus, '"},',
-            '{"trait_type": "Supporter", "value": "', addressToString(supporter), '"},',
-            '{"trait_type": "Target Repayment", "value": "', targetRepaymentDate.toString(), '", "display_type": "date"}',
-            ']}'
+        // Return simplified JSON metadata
+        return string(abi.encodePacked(
+            'data:application/json,{"name":"LNDY Support Token #', tokenId.toString(),
+            '","description":"', description, 
+            '","image":"', baseImageURI,
+            '","attributes":[{"trait_type":"Contribution Amount","value":"', (value / 1e6).toString(),
+            '"},{"trait_type":"Status","value":"', tokenStatus, '"}]}'
         ));
-        
-        // Return as data URI for OpenSea compatibility
-        return string(abi.encodePacked("data:application/json;base64,", base64Encode(bytes(json))));
     }
     
     /**
@@ -338,48 +316,6 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
     // Helper functions
     function ownerOf(uint256 tokenId) public view returns (address) {
         return tokenSupporter[tokenId];
-    }
-    
-    function addressToString(address _addr) internal pure returns (string memory) {
-        bytes32 value = bytes32(uint256(uint160(_addr)));
-        bytes memory alphabet = "0123456789abcdef";
-        bytes memory str = new bytes(42);
-        str[0] = '0';
-        str[1] = 'x';
-        for (uint256 i = 0; i < 20; i++) {
-            str[2+i*2] = alphabet[uint8(value[i + 12] >> 4)];
-            str[3+i*2] = alphabet[uint8(value[i + 12] & 0x0f)];
-        }
-        return string(str);
-    }
-    
-    function base64Encode(bytes memory data) internal pure returns (string memory) {
-        // Simple base64 encoding for metadata URI
-        // In production, you might want to use a more robust implementation
-        string memory table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        
-        if (data.length == 0) return "";
-        
-        string memory result = new string(4 * ((data.length + 2) / 3));
-        bytes memory resultBytes = bytes(result);
-        
-        uint256 i = 0;
-        uint256 j = 0;
-        
-        for (; i + 3 <= data.length; i += 3) {
-            uint256 a = uint256(uint8(data[i]));
-            uint256 b = uint256(uint8(data[i + 1]));
-            uint256 c = uint256(uint8(data[i + 2]));
-            
-            uint256 bitmap = (a << 16) | (b << 8) | c;
-            
-            resultBytes[j++] = bytes1(uint8(bytes(table)[bitmap >> 18]));
-            resultBytes[j++] = bytes1(uint8(bytes(table)[(bitmap >> 12) & 63]));
-            resultBytes[j++] = bytes1(uint8(bytes(table)[(bitmap >> 6) & 63]));
-            resultBytes[j++] = bytes1(uint8(bytes(table)[bitmap & 63]));
-        }
-        
-        return result;
     }
     
     /**

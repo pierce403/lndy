@@ -276,8 +276,11 @@ contract LndyLoanTest is Test {
         string memory tokenURI = loan.uri(1);
         assertTrue(bytes(tokenURI).length > 0);
         
-        // Should contain base64 encoded JSON
-        assertTrue(_contains(tokenURI, "data:application/json;base64,"));
+        // Should contain JSON metadata (not base64 encoded anymore)
+        assertTrue(_contains(tokenURI, "data:application/json,"));
+        assertTrue(_contains(tokenURI, "LNDY Support Token #1"));
+        assertTrue(_contains(tokenURI, "Contribution Amount"));
+        assertTrue(_contains(tokenURI, "Status"));
     }
     
     function testGetSupporterTokenDetails() public {
