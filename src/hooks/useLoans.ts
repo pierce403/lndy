@@ -10,6 +10,25 @@ export const useLoans = () => {
 
   const launcherAddress = import.meta.env.VITE_LAUNCHER_CONTRACT_ADDRESS;
 
+  // Function to fetch hidden loan addresses
+  const fetchHiddenAddresses = async (): Promise<Set<string>> => {
+    try {
+      const response = await fetch('/hidden.txt');
+      if (response.ok) {
+        const text = await response.text();
+        const addresses = text
+          .split('\n')
+          .map(addr => addr.trim().toLowerCase())
+          .filter(addr => addr.length > 0);
+        console.log("🔒 useLoans: Loaded hidden addresses:", addresses);
+        return new Set(addresses);
+      }
+    } catch {
+      console.log("ℹ️ useLoans: No hidden.txt file found or error reading it, continuing without filtering");
+    }
+    return new Set();
+  };
+
   useEffect(() => {
     const fetchLoanDetails = async () => {
       console.log("🔍 useLoans: Starting loan fetch process...");
@@ -23,6 +42,9 @@ export const useLoans = () => {
       }
 
       try {
+        // Fetch hidden addresses first
+        const hiddenAddresses = await fetchHiddenAddresses();
+        
         console.log("🔗 useLoans: Getting launcher contract instance...");
         const launcherContract = getLauncherContract();
         console.log("✅ useLoans: Launcher contract instance created:", launcherContract);
@@ -44,10 +66,29 @@ export const useLoans = () => {
           return;
         }
 
-        console.log("🔄 useLoans: Starting to fetch details for each loan...");
-        const loanDetailsPromises = loanAddresses.map(async (loanAddress: string, index: number) => {
+        // Filter out hidden addresses
+        const visibleLoanAddresses = loanAddresses.filter((address: string) => {
+          const isHidden = hiddenAddresses.has(address.toLowerCase());
+          if (isHidden) {
+            console.log("🔒 useLoans: Filtering out hidden loan:", address);
+          }
+          return !isHidden;
+        });
+
+        console.log("👁️ useLoans: Visible loan addresses after filtering:", visibleLoanAddresses);
+        console.log("📊 useLoans: Visible loans count:", visibleLoanAddresses.length);
+
+        if (visibleLoanAddresses.length === 0) {
+          console.log("📭 useLoans: No visible loans after filtering, setting empty array");
+          setLoans([]);
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("🔄 useLoans: Starting to fetch details for each visible loan...");
+        const loanDetailsPromises = visibleLoanAddresses.map(async (loanAddress: string, index: number) => {
           try {
-            console.log(`🏦 useLoans: [${index + 1}/${loanAddresses.length}] Processing loan at address: ${loanAddress}`);
+            console.log(`🏦 useLoans: [${index + 1}/${visibleLoanAddresses.length}] Processing loan at address: ${loanAddress}`);
             const loanContract = getLoanContract(loanAddress);
             console.log(`🔗 useLoans: [${index + 1}] Created contract instance for loan ${loanAddress}`);
             
