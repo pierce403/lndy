@@ -21,7 +21,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
   };
 
   const formatCurrency = (amount: bigint) => {
-    return (Number(amount) / 1e18).toLocaleString('en-US', {
+    return (Number(amount) / 1e6).toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
     });
@@ -29,7 +29,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
   // Calculate total repayment amount (principal + thank you amount)
   const calculateTotalRepayment = () => {
-    const principal = Number(loan.loanAmount) / 1e18;
+    const principal = Number(loan.loanAmount) / 1e6;
     const thankYouAmount = (principal * loan.interestRate) / 10000;
     return principal + thankYouAmount;
   };
@@ -78,8 +78,8 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       address: loan.address,
       description: loan.description,
       borrower: loan.borrower,
-      loanAmount: Number(loan.loanAmount) / 1e18 + " ETH",
-      totalFunded: Number(loan.totalFunded) / 1e18 + " ETH",
+      loanAmount: Number(loan.loanAmount) / 1e6 + " USDC",
+      totalFunded: Number(loan.totalFunded) / 1e6 + " USDC",
       progressPercentage: progressPercentage + "%"
     });
     console.log("👤 LoanCard: Current user address:", address);
@@ -92,8 +92,8 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
     try {
       console.log("🚀 LoanCard: Starting loan funding process...");
-      const fundAmount = BigInt(1e18); // 1 ETH equivalent on Base
-      console.log("💸 LoanCard: Funding amount:", Number(fundAmount) / 1e18, "ETH");
+      const fundAmount = BigInt(10 * 1e6); // 10 USDC (6 decimals)
+      console.log("💸 LoanCard: Funding amount:", Number(fundAmount) / 1e6, "USDC");
       
       console.log("🔗 LoanCard: Getting loan contract instance...");
       const contract = getLoanContract(loan.address);
@@ -102,17 +102,15 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       console.log("📝 LoanCard: Preparing funding transaction...");
       const transaction = prepareContractCall({
         contract,
-        method: "function fundLoan(uint256 amount) payable",
-        params: [fundAmount],
-        value: fundAmount
+        method: "function supportLoan(uint256 _amount)",
+        params: [fundAmount]
       });
       
       console.log("🔗 LoanCard: Transaction prepared:", transaction);
       console.log("📤 LoanCard: Transaction parameters:", {
         contractAddress: loan.address,
         fundAmount: fundAmount.toString(),
-        fundAmountETH: Number(fundAmount) / 1e18,
-        value: fundAmount.toString()
+        fundAmountUSDC: Number(fundAmount) / 1e6
       });
       
       console.log("🚀 LoanCard: Sending funding transaction...");
@@ -124,8 +122,8 @@ const LoanCard = ({ loan }: LoanCardProps) => {
           console.log("📊 LoanCard: Funding details:", {
             loanAddress: loan.address,
             funder: address,
-            amountFunded: Number(fundAmount) / 1e18 + " ETH",
-            previousFunding: Number(loan.totalFunded) / 1e18 + " ETH",
+            amountFunded: Number(fundAmount) / 1e6 + " USDC",
+            previousFunding: Number(loan.totalFunded) / 1e6 + " USDC",
             timestamp: new Date().toISOString()
           });
           
@@ -138,7 +136,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
             message: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : 'No stack trace',
             loanAddress: loan.address,
-            fundAmount: Number(fundAmount) / 1e18 + " ETH"
+            fundAmount: Number(fundAmount) / 1e6 + " USDC"
           });
           alert("Failed to fund loan. See console for details.");
         }
@@ -160,14 +158,15 @@ const LoanCard = ({ loan }: LoanCardProps) => {
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       {/* NFT Image */}
       {loan.imageURI && (
-        <div className="aspect-w-16 aspect-h-9">
+        <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
           <img
             src={loan.imageURI}
             alt={loan.description}
             className="w-full h-48 object-cover"
             onError={(e) => {
-              // Hide image if it fails to load
-              e.currentTarget.style.display = 'none';
+              console.warn("Failed to load loan image:", loan.imageURI);
+              // Show a placeholder instead of hiding completely
+              e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" fill="%23f3f4f6"/><text x="200" y="100" text-anchor="middle" dy="0.3em" font-family="sans-serif" font-size="16" fill="%236b7280">Image not available</text></svg>';
             }}
           />
         </div>
@@ -177,7 +176,14 @@ const LoanCard = ({ loan }: LoanCardProps) => {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{loan.description}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">By {loan.borrower.substring(0, 6)}...{loan.borrower.substring(38)}</p>
+            <a 
+              href={`https://basescan.org/address/${loan.borrower}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+            >
+              By {loan.borrower.substring(0, 6)}...{loan.borrower.substring(38)}
+            </a>
           </div>
           <div className={`px-2 py-1 text-xs font-medium rounded-full ${
             loan.isRepaid 
@@ -200,7 +206,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
             <span className="font-medium text-gray-900 dark:text-white">
               ${calculateTotalRepayment().toLocaleString()} 
               <span className="text-xs text-gray-400 ml-1">
-                (includes ${((Number(loan.loanAmount) / 1e18 * loan.interestRate) / 10000).toLocaleString()} thank you)
+                (includes ${((Number(loan.loanAmount) / 1e6 * loan.interestRate) / 10000).toLocaleString()} thank you)
               </span>
             </span>
           </div>

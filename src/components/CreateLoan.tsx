@@ -8,7 +8,7 @@ import { client } from "../lib/client";
 const CreateLoan = () => {
   const account = useActiveAccount();
   const address = account?.address;
-  const [loanAmount, setLoanAmount] = useState<string>("40000");
+  const [loanAmount, setLoanAmount] = useState<string>("100");
   const [interestRate, setInterestRate] = useState<string>("1000"); // 10% in basis points
   const [duration, setDuration] = useState<string>("2592000"); // 30 days in seconds
   const [description, setDescription] = useState<string>("");
@@ -115,7 +115,7 @@ const CreateLoan = () => {
       console.log("✅ CreateLoan: Image upload completed, URI:", imageURI);
       
       console.log("🔢 CreateLoan: Processing loan parameters...");
-      const loanAmountWei = BigInt(parseFloat(loanAmount) * 1e18);
+      const loanAmountWei = BigInt(parseFloat(loanAmount) * 1e6); // USDC uses 6 decimals
       const interestRateBps = parseInt(interestRate);
       const durationSeconds = parseInt(duration);
       const fundingPeriod = 604800; // 1 week in seconds
@@ -126,7 +126,7 @@ const CreateLoan = () => {
       
       console.log("📊 CreateLoan: Processed parameters:", {
         loanAmountWei: loanAmountWei.toString(),
-        loanAmountETH: parseFloat(loanAmount),
+        loanAmountUSDC: parseFloat(loanAmount),
         interestRateBps,
         interestRatePercent: interestRateBps / 100,
         durationSeconds,
@@ -186,7 +186,7 @@ const CreateLoan = () => {
           alert("Loan created successfully!");
           
           console.log("🔄 CreateLoan: Resetting form fields...");
-          setLoanAmount("40000");
+          setLoanAmount("100");
           setInterestRate("1000");
           setDuration("2592000");
           setDescription("");
