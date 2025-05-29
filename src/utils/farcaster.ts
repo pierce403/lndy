@@ -58,5 +58,5 @@ export const lookupFarcasterProfile = async (address: string): Promise<Farcaster
 };
 
 export const getFarcasterProfileUrl = (username: string): string => {
-  return `https://warpcast.com/${username}`;
+  return `https://farcaster.xyz/${username}`;
 }; 
