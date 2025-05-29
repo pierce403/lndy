@@ -136,8 +136,8 @@ forge coverage
 ### Contract Addresses (Base Mainnet)
 
 - **USDC**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- **LndyLauncher**: `0x1e5a41abf9a83e1346978414ae4e001b50b0431f`
 - **LNDY Token**: *Deploy using Foundry*
-- **LndyLauncher**: *Deploy using Foundry*
 
 ### Base Network Setup
 

@@ -140,7 +140,9 @@ forge test --match-test testNFTMetadata -vvv
 ## Contract Addresses
 
 ### Base Mainnet
-- USDC: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- **USDC**: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- **LndyLauncher**: `0x1e5a41abf9a83e1346978414ae4e001b50b0431f`
+- **Contract Verification**: [BaseScan](https://basescan.org/address/0x1e5a41abf9a83e1346978414ae4e001b50b0431f)
 
 ### Test Networks
 Deploy your own instances for testing on Base Sepolia or local networks.
