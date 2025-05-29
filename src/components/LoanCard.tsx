@@ -1,9 +1,8 @@
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
-import { prepareContractCall } from "thirdweb";
-import { getLoanContract } from "../lib/client";
+import { useActiveAccount } from "thirdweb/react";
 import { Loan } from "../types/types";
 import { useState } from "react";
 import Modal from "./Modal";
+import FundingModal from "./FundingModal";
 
 interface LoanCardProps {
   loan: Loan;
@@ -12,7 +11,7 @@ interface LoanCardProps {
 const LoanCard = ({ loan }: LoanCardProps) => {
   const account = useActiveAccount();
   const address = account?.address;
-  const { mutate: sendTransaction, isPending } = useSendTransaction();
+  const [showFundingModal, setShowFundingModal] = useState<boolean>(false);
   const [showFundingSuccessModal, setShowFundingSuccessModal] = useState<boolean>(false);
   const [fundingSuccessDetails, setFundingSuccessDetails] = useState<{
     transactionHash: string;
@@ -79,90 +78,12 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
   const repaymentHealth = calculateRepaymentHealth();
 
-  const handleFund = async () => {
-    console.log("💰 LoanCard: Fund button clicked");
-    console.log("🏦 LoanCard: Loan being funded:", {
-      address: loan.address,
-      description: loan.description,
-      borrower: loan.borrower,
-      loanAmount: Number(loan.loanAmount) / 1e6 + " USDC",
-      totalFunded: Number(loan.totalFunded) / 1e6 + " USDC",
-      progressPercentage: progressPercentage + "%"
+  const handleFundingSuccess = (transactionHash: string, amount: string) => {
+    setFundingSuccessDetails({
+      transactionHash,
+      amountFunded: amount
     });
-    console.log("👤 LoanCard: Current user address:", address);
-    
-    if (!address) {
-      console.warn("⚠️ LoanCard: No wallet connected, showing alert");
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      console.log("🚀 LoanCard: Starting loan funding process...");
-      const fundAmount = BigInt(10 * 1e6); // 10 USDC (6 decimals)
-      console.log("💸 LoanCard: Funding amount:", Number(fundAmount) / 1e6, "USDC");
-      
-      console.log("🔗 LoanCard: Getting loan contract instance...");
-      const contract = getLoanContract(loan.address);
-      console.log("✅ LoanCard: Loan contract obtained:", contract);
-      
-      console.log("📝 LoanCard: Preparing funding transaction...");
-      const transaction = prepareContractCall({
-        contract,
-        method: "function supportLoan(uint256 _amount)",
-        params: [fundAmount]
-      });
-      
-      console.log("🔗 LoanCard: Transaction prepared:", transaction);
-      console.log("📤 LoanCard: Transaction parameters:", {
-        contractAddress: loan.address,
-        fundAmount: fundAmount.toString(),
-        fundAmountUSDC: Number(fundAmount) / 1e6
-      });
-      
-      console.log("🚀 LoanCard: Sending funding transaction...");
-      sendTransaction(transaction, {
-        onSuccess: (result) => {
-          console.log("🎉 LoanCard: Funding transaction successful!");
-          console.log("✅ LoanCard: Transaction result:", result);
-          console.log("🔗 LoanCard: Transaction hash:", result.transactionHash);
-          console.log("📊 LoanCard: Funding details:", {
-            loanAddress: loan.address,
-            funder: address,
-            amountFunded: Number(fundAmount) / 1e6 + " USDC",
-            previousFunding: Number(loan.totalFunded) / 1e6 + " USDC",
-            timestamp: new Date().toISOString()
-          });
-          
-          setShowFundingSuccessModal(true);
-          setFundingSuccessDetails({
-            transactionHash: result.transactionHash,
-            amountFunded: Number(fundAmount) / 1e6 + " USDC"
-          });
-        },
-        onError: (error) => {
-          console.error("💥 LoanCard: Funding transaction failed!");
-          console.error("❌ LoanCard: Transaction error:", error);
-          console.error("🔍 LoanCard: Error details:", {
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : 'No stack trace',
-            loanAddress: loan.address,
-            fundAmount: Number(fundAmount) / 1e6 + " USDC"
-          });
-          alert("Failed to fund loan. See console for details.");
-        }
-      });
-    } catch (err) {
-      console.error("💥 LoanCard: Critical error in funding process!");
-      console.error("❌ LoanCard: Error details:", err);
-      console.error("🔍 LoanCard: Error breakdown:", {
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : 'No stack trace',
-        loanAddress: loan.address,
-        userAddress: address
-      });
-      alert("Failed to fund loan. See console for details.");
-    }
+    setShowFundingSuccessModal(true);
   };
 
   return (
@@ -300,13 +221,12 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       <div className="px-5 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
         {!loan.isActive && !loan.isRepaid && Math.floor(Date.now() / 1000) < loan.fundingDeadline ? (
           <button
-            onClick={handleFund}
-            disabled={isPending || !address}
+            onClick={() => setShowFundingModal(true)}
             className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-700 ${
-              isPending || !address ? "opacity-50 cursor-not-allowed" : ""
+              !address ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {isPending ? "Processing..." : "Fund This Loan"}
+            {address ? "Fund This Loan" : "Connect Wallet"}
           </button>
         ) : loan.isActive && !loan.isRepaid ? (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
@@ -376,6 +296,15 @@ const LoanCard = ({ loan }: LoanCardProps) => {
             </div>
           </div>
         </Modal>
+      )}
+
+      {showFundingModal && (
+        <FundingModal
+          isOpen={showFundingModal}
+          onClose={() => setShowFundingModal(false)}
+          loan={loan}
+          onSuccess={handleFundingSuccess}
+        />
       )}
     </div>
   );
