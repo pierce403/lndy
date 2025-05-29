@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useActiveAccount, useSendTransaction } from "thirdweb/react";
-import { prepareContractCall, getContract } from "thirdweb";
+import { prepareContractCall, getContract, readContract } from "thirdweb";
 import { getLoanContract } from "../lib/client";
 import { client } from "../lib/client";
 import { base } from "thirdweb/chains";
@@ -22,6 +22,8 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
   const [fundingAmount, setFundingAmount] = useState<number>(10);
   const [isApproving, setIsApproving] = useState<boolean>(false);
   const [hasApproval, setHasApproval] = useState<boolean>(false);
+  const [usdcBalance, setUsdcBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
   
   // Calculate remaining amount needed
   const remainingAmount = Number(loan.loanAmount - loan.totalFunded) / 1e6;
@@ -37,13 +39,47 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setFundingAmount(Math.min(10, remainingAmount));
+      const maxAmount = Math.min(remainingAmount, usdcBalance);
+      setFundingAmount(Math.min(10, maxAmount));
       setHasApproval(false);
     }
-  }, [isOpen, remainingAmount]);
+  }, [isOpen, remainingAmount, usdcBalance]);
+
+  // Fetch USDC balance when modal opens
+  useEffect(() => {
+    const fetchUsdcBalance = async () => {
+      if (!address || !isOpen) {
+        setIsLoadingBalance(false);
+        return;
+      }
+
+      try {
+        setIsLoadingBalance(true);
+        console.log("💰 FundingModal: Fetching USDC balance for:", address);
+        
+        const balance = await readContract({
+          contract: usdcContract,
+          method: "function balanceOf(address account) view returns (uint256)",
+          params: [address],
+        });
+        
+        const balanceInUSDC = Number(balance) / 1e6;
+        console.log("✅ FundingModal: USDC balance:", balanceInUSDC, "USDC");
+        setUsdcBalance(balanceInUSDC);
+      } catch (error) {
+        console.error("❌ FundingModal: Failed to fetch USDC balance:", error);
+        setUsdcBalance(0);
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    fetchUsdcBalance();
+  }, [address, isOpen, usdcContract]);
 
   const handlePercentageClick = (percentage: number) => {
-    const amount = Math.min((remainingAmount * percentage) / 100, remainingAmount);
+    const maxAmount = Math.min(remainingAmount, usdcBalance);
+    const amount = Math.min((maxAmount * percentage) / 100, maxAmount);
     setFundingAmount(Math.round(amount * 100) / 100); // Round to 2 decimal places
   };
 
@@ -123,11 +159,36 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
     }
   };
 
-  const canProceed = fundingAmount > 0 && fundingAmount <= remainingAmount && address;
+  const canProceed = fundingAmount > 0 && fundingAmount <= remainingAmount && fundingAmount <= usdcBalance && address;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="💰 Fund This Loan">
       <div className="space-y-6">
+        {/* User's USDC Balance */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex justify-between items-center">
+            <span className="text-blue-800 dark:text-blue-200 font-medium">Your USDC Balance</span>
+            {isLoadingBalance ? (
+              <div className="flex items-center text-blue-600 dark:text-blue-400">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+              </div>
+            ) : (
+              <span className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                ${usdcBalance.toLocaleString()} USDC
+              </span>
+            )}
+          </div>
+          {!isLoadingBalance && usdcBalance < 1 && (
+            <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+              ⚠️ You need USDC to fund loans. Get USDC on Base network first.
+            </p>
+          )}
+        </div>
+
         {/* Loan Progress */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div className="flex justify-between text-sm mb-2">
@@ -157,12 +218,17 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
           {/* Percentage Buttons */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             {[10, 25, 50, 100].map(percentage => {
-              const amount = Math.min((remainingAmount * percentage) / 100, remainingAmount);
+              const maxAmount = Math.min(remainingAmount, usdcBalance);
+              const amount = Math.min((maxAmount * percentage) / 100, maxAmount);
+              const isDisabled = maxAmount <= 0;
               return (
                 <button
                   key={percentage}
                   onClick={() => handlePercentageClick(percentage)}
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={isDisabled}
+                  className={`px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    isDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   {percentage === 100 ? 'MAX' : `${percentage}%`}
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -178,20 +244,32 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
             <input
               type="number"
               min="1"
-              max={remainingAmount}
+              max={Math.min(remainingAmount, usdcBalance)}
               step="0.01"
               value={fundingAmount}
-              onChange={(e) => setFundingAmount(Math.min(parseFloat(e.target.value) || 0, remainingAmount))}
+              onChange={(e) => setFundingAmount(Math.min(parseFloat(e.target.value) || 0, Math.min(remainingAmount, usdcBalance)))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="Enter custom amount"
             />
+            
+            {/* Validation Messages */}
+            {fundingAmount > usdcBalance && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                ⚠️ Amount exceeds your USDC balance (${usdcBalance.toLocaleString()})
+              </p>
+            )}
+            {fundingAmount > remainingAmount && (
+              <p className="text-sm text-orange-600 dark:text-orange-400">
+                ⚠️ Amount exceeds remaining needed (${remainingAmount.toLocaleString()})
+              </p>
+            )}
             
             {/* Slider */}
             <div className="px-2">
               <input
                 type="range"
                 min="1"
-                max={remainingAmount}
+                max={Math.min(remainingAmount, usdcBalance)}
                 step="0.01"
                 value={fundingAmount}
                 onChange={(e) => setFundingAmount(parseFloat(e.target.value))}
@@ -199,7 +277,7 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
               />
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <span>$1</span>
-                <span>${remainingAmount.toFixed(0)}</span>
+                <span>${Math.min(remainingAmount, usdcBalance).toFixed(0)}</span>
               </div>
             </div>
           </div>
