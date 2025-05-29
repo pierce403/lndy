@@ -47,7 +47,7 @@ export const useInvestments = () => {
             if (balance && balance > 0) {
               const loanDetails = await readContract({
                 contract: loanContract,
-                method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingDeadline, uint256 _repaymentDate, string _description, string _imageURI, address _borrower, uint256 _totalFunded, bool _isActive, bool _isRepaid)",
+                method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
                 params: [],
               });
               
@@ -55,15 +55,15 @@ export const useInvestments = () => {
                 address: loanAddress,
                 loanAmount: loanDetails[0],
                 interestRate: Number(loanDetails[1]),
-                duration: Number(loanDetails[2]),
+                duration: Number(loanDetails[2] - loanDetails[3]),
                 fundingDeadline: Number(loanDetails[3]),
-                repaymentDate: Number(loanDetails[4]),
-                description: loanDetails[5],
-                imageURI: loanDetails[6],
-                borrower: loanDetails[7],
-                totalFunded: loanDetails[8],
-                isActive: loanDetails[9],
-                isRepaid: loanDetails[10]
+                repaymentDate: Number(loanDetails[2]),
+                description: loanDetails[4],
+                imageURI: loanDetails[5],
+                borrower: loanDetails[6],
+                totalFunded: loanDetails[7],
+                isActive: loanDetails[10],
+                isRepaid: loanDetails[11]
               };
             }
             
