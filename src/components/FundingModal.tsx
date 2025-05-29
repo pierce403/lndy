@@ -75,7 +75,7 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
     };
 
     fetchUsdcBalance();
-  }, [address, isOpen, usdcContract]);
+  }, [address, isOpen]);
 
   const handlePercentageClick = (percentage: number) => {
     const maxAmount = Math.min(remainingAmount, usdcBalance);
