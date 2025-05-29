@@ -8,9 +8,10 @@ import CreateLoan from "./components/CreateLoan";
 import LoanList from "./components/LoanList";
 import Dashboard from "./components/Dashboard";
 import MyLoans from "./pages/MyLoans";
+import About from "./components/About";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"browse" | "create" | "myloans" | "dashboard">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "create" | "myloans" | "dashboard" | "about">("browse");
 
   // Check if required environment variables are set
   const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID;
@@ -47,7 +48,7 @@ function App() {
                 chain={base}
               />
             </div>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Social lending powered by Base</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Social lending powered by Ethereum</p>
           </div>
         </header>
 
@@ -94,6 +95,16 @@ function App() {
               >
                 My Dashboard
               </button>
+              <button
+                className={`px-3 py-4 text-sm font-medium ${
+                  activeTab === "about"
+                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+                onClick={() => setActiveTab("about")}
+              >
+                About
+              </button>
             </div>
           </div>
         </nav>
@@ -126,6 +137,7 @@ function App() {
           {activeTab === "create" && <CreateLoan />}
           {activeTab === "myloans" && <MyLoans />}
           {activeTab === "dashboard" && <Dashboard />}
+          {activeTab === "about" && <About />}
         </main>
 
         <footer className="bg-white dark:bg-gray-800 shadow-inner mt-auto">
