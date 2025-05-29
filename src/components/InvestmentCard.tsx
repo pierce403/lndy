@@ -38,6 +38,13 @@ const InvestmentCard = ({ investment, onClaimSuccess }: InvestmentCardProps) => 
     ? (investment.contributionAmount * investment.totalRepaidAmount) / (investment.totalRepaidAmount - (investment.actualRepaidAmount - investment.contributionAmount))
     : investment.contributionAmount;
 
+  // Check if user has claimed all available returns based on what's been repaid so far
+  const userProportionalShare = investment.actualRepaidAmount > 0 
+    ? (investment.contributionAmount * investment.actualRepaidAmount) / (investment.totalRepaidAmount > 0 ? investment.totalRepaidAmount : investment.contributionAmount)
+    : 0;
+  
+  const hasClaimedAllAvailable = investment.claimedAmount >= userProportionalShare - 0.01; // Small tolerance for rounding
+
   const handleClaim = async () => {
     if (!address || investment.claimableAmount <= 0) return;
     
@@ -189,15 +196,24 @@ const InvestmentCard = ({ investment, onClaimSuccess }: InvestmentCardProps) => 
           >
             {isPending ? "Claiming..." : `Claim ${formatCurrency(investment.claimableAmount)}`}
           </button>
-        ) : investment.isLoanActive ? (
+        ) : investment.isLoanRepaid || hasClaimedAllAvailable ? (
+          <div className="text-center text-sm text-gray-600 dark:text-gray-300">
+            <div className="font-medium text-green-600 dark:text-green-400">
+              {investment.isLoanRepaid ? "✅ Loan Complete" : "✅ Fully Claimed"}
+            </div>
+            <div className="mt-1">
+              {investment.isLoanRepaid ? "All returns have been claimed" : "All available returns claimed"}
+            </div>
+          </div>
+        ) : investment.isLoanActive && investment.actualRepaidAmount > 0 ? (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
             <div className="font-medium text-blue-600 dark:text-blue-400">💰 Investment Active</div>
             <div className="mt-1">Returns available as loan is repaid</div>
           </div>
-        ) : investment.isLoanRepaid ? (
+        ) : investment.isLoanActive ? (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
-            <div className="font-medium text-green-600 dark:text-green-400">✅ Fully Claimed</div>
-            <div className="mt-1">All returns have been claimed</div>
+            <div className="font-medium text-blue-600 dark:text-blue-400">💰 Investment Active</div>
+            <div className="mt-1">Waiting for borrower repayments</div>
           </div>
         ) : (
           <div className="text-center text-sm text-gray-600 dark:text-gray-300">
