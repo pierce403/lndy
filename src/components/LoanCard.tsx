@@ -3,6 +3,7 @@ import { Loan } from "../types/types";
 import { useState } from "react";
 import Modal from "./Modal";
 import FundingModal from "./FundingModal";
+import IpfsImage from "./IpfsImage";
 
 interface LoanCardProps {
   loan: Loan;
@@ -91,15 +92,10 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       {/* NFT Image */}
       {loan.imageURI && (
         <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
-          <img
+          <IpfsImage
             src={loan.imageURI}
             alt={loan.description}
             className="w-full h-48 object-cover"
-            onError={(e) => {
-              console.warn("Failed to load loan image:", loan.imageURI);
-              // Show a placeholder instead of hiding completely
-              e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" fill="%23f3f4f6"/><text x="200" y="100" text-anchor="middle" dy="0.3em" font-family="sans-serif" font-size="16" fill="%236b7280">Image not available</text></svg>';
-            }}
           />
         </div>
       )}
