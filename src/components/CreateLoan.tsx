@@ -275,147 +275,171 @@ const CreateLoan = () => {
           <p className="text-gray-600 dark:text-gray-300 mb-4">Please connect your wallet to create a loan</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="loanAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                You're requesting (USD)
-              </label>
-              <div className="mt-1">
-                <input
-                  type="number"
-                  id="loanAmount"
-                  value={loanAmount}
-                  onChange={(e) => setLoanAmount(e.target.value)}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                  min="1"
-                />
+        <>
+          {/* Borrower Responsibility Warning */}
+          <div className="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
               </div>
-            </div>
-            
-            <div>
-              <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Thank You Amount (%)
-              </label>
-              <div className="mt-1">
-                <input
-                  type="number"
-                  id="interestRate"
-                  value={parseFloat(interestRate) / 100}
-                  onChange={(e) => setInterestRate((parseFloat(e.target.value) * 100).toString())}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Extra amount you'll return to show appreciation to your supporters
-              </p>
-              {loanAmount && interestRate && (
-                <p className="mt-1 text-sm text-indigo-600 dark:text-indigo-400">
-                  You'll return: ${((parseFloat(loanAmount) * (1 + parseFloat(interestRate) / 10000))).toLocaleString()} 
-                  (includes ${((parseFloat(loanAmount) * parseFloat(interestRate)) / 10000).toLocaleString()} thank you to supporters)
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Target Repayment Timeframe (Days)
-              </label>
-              <div className="mt-1">
-                <input
-                  type="number"
-                  id="duration"
-                  value={parseInt(duration) / 86400} // Convert seconds to days
-                  onChange={(e) => setDuration((parseInt(e.target.value) * 86400).toString())}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                  min="1"
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                When you're planning to repay (you can repay gradually over time)
-              </p>
-            </div>
-            
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Loan Description
-              </label>
-              <div className="mt-1">
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Describe the purpose of your loan and why people should fund it
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Loan NFT Image
-              </label>
-              <div className="mt-1">
-                <input
-                  type="file"
-                  id="image"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  disabled={isUploadingImage || isCreating}
-                  className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    (isUploadingImage || isCreating) ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  required
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                This image will be used as the graphic for your loan NFT tokens (Max: 10MB, JPEG/PNG/GIF/WebP)
-              </p>
-              
-              {isUploadingImage && (
-                <div className="mt-2 flex items-center text-sm text-indigo-600 dark:text-indigo-400">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Uploading to IPFS...
+              <div className="ml-3">
+                <div className="text-sm text-orange-800 dark:text-orange-200">
+                  <p className="font-medium">📋 BORROWER RESPONSIBILITIES</p>
+                  <p className="mt-1">
+                    By creating this loan, you commit to making every effort to repay your supporters. 
+                    <strong> Only request money you genuinely intend and expect to be able to repay.</strong> 
+                    Consider unexpected life events, job changes, or emergencies that might affect your ability to repay. 
+                    Your supporters are trusting you personally - treat this responsibility seriously.
+                  </p>
                 </div>
-              )}
-              
-              {imagePreview && !isUploadingImage && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview:</p>
-                  <img
-                    src={imagePreview}
-                    alt="NFT Preview"
-                    className="w-32 h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                  />
-                </div>
-              )}
-            </div>
-            
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={isCreating || isUploadingImage}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 ${
-                  (isCreating || isUploadingImage) ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                {isUploadingImage ? "Uploading Image..." : isCreating ? "Creating..." : "Create Loan"}
-              </button>
+              </div>
             </div>
           </div>
-        </form>
+
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="loanAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  You're requesting (USD)
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    id="loanAmount"
+                    value={loanAmount}
+                    onChange={(e) => setLoanAmount(e.target.value)}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                    min="1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Thank You Amount (%)
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    id="interestRate"
+                    value={parseFloat(interestRate) / 100}
+                    onChange={(e) => setInterestRate((parseFloat(e.target.value) * 100).toString())}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Extra amount you'll return to show appreciation to your supporters
+                </p>
+                {loanAmount && interestRate && (
+                  <p className="mt-1 text-sm text-indigo-600 dark:text-indigo-400">
+                    You'll return: ${((parseFloat(loanAmount) * (1 + parseFloat(interestRate) / 10000))).toLocaleString()} 
+                    (includes ${((parseFloat(loanAmount) * parseFloat(interestRate)) / 10000).toLocaleString()} thank you to supporters)
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Target Repayment Timeframe (Days)
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    id="duration"
+                    value={parseInt(duration) / 86400} // Convert seconds to days
+                    onChange={(e) => setDuration((parseInt(e.target.value) * 86400).toString())}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                    min="1"
+                  />
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  When you're planning to repay (you can repay gradually over time)
+                </p>
+              </div>
+              
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Loan Description
+                </label>
+                <div className="mt-1">
+                  <textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Describe the purpose of your loan and why people should fund it
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Loan NFT Image
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="file"
+                    id="image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    disabled={isUploadingImage || isCreating}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                      (isUploadingImage || isCreating) ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    required
+                  />
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  This image will be used as the graphic for your loan NFT tokens (Max: 10MB, JPEG/PNG/GIF/WebP)
+                </p>
+                
+                {isUploadingImage && (
+                  <div className="mt-2 flex items-center text-sm text-indigo-600 dark:text-indigo-400">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading to IPFS...
+                  </div>
+                )}
+                
+                {imagePreview && !isUploadingImage && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview:</p>
+                    <img
+                      src={imagePreview}
+                      alt="NFT Preview"
+                      className="w-32 h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={isCreating || isUploadingImage}
+                  className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 ${
+                    (isCreating || isUploadingImage) ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isUploadingImage ? "Uploading Image..." : isCreating ? "Creating..." : "Create Loan"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </>
       )}
 
       {showSuccessModal && (
