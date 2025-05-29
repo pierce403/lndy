@@ -231,6 +231,17 @@ const LoanCard = ({ loan }: LoanCardProps) => {
               <span className="font-medium text-gray-900 dark:text-white">{formatDate(loan.fundingDeadline)}</span>
             </div>
           )}
+          <div className="flex justify-between text-sm mt-1">
+            <span className="text-gray-500 dark:text-gray-400">NFT Collection</span>
+            <a 
+              href={`https://opensea.io/assets/base/${loan.address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors text-xs"
+            >
+              View on OpenSea →
+            </a>
+          </div>
         </div>
         
         <div className="mt-4">

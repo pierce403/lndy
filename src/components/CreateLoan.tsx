@@ -30,6 +30,20 @@ const CreateLoan = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Basic file validation
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      
+      if (file.size > maxSize) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+      
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -55,10 +69,14 @@ const CreateLoan = () => {
       console.log("☁️ CreateLoan: Calling Thirdweb upload function...");
       console.log("🔗 CreateLoan: Using client:", client);
       
-      const uri = await upload({
+      // Try the upload with proper error handling
+      const uris = await upload({
         client,
         files: [file],
       });
+      
+      // The upload function returns an array of URIs, take the first one
+      const uri = Array.isArray(uris) ? uris[0] : uris;
       
       console.log("✅ CreateLoan: IPFS upload successful!");
       console.log("🔗 CreateLoan: Returned URI:", uri);
@@ -78,7 +96,19 @@ const CreateLoan = () => {
         fileName: file.name,
         fileSize: file.size
       });
-      throw new Error("Failed to upload image to IPFS");
+      
+      // Provide more specific error message
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          throw new Error("Network error during upload. Please check your internet connection and try again.");
+        } else if (error.message.includes('client')) {
+          throw new Error("Configuration error. Please check your Thirdweb client ID.");
+        } else {
+          throw new Error(`Upload failed: ${error.message}`);
+        }
+      }
+      
+      throw new Error("Failed to upload image to IPFS. Please try again.");
     } finally {
       console.log("🏁 CreateLoan: IPFS upload process completed, resetting upload state");
       setIsUploadingImage(false);
@@ -226,7 +256,10 @@ const CreateLoan = () => {
         stack: err instanceof Error ? err.stack : 'No stack trace',
         formData: { loanAmount, interestRate, duration, description: description.length }
       });
-      alert("Failed to create loan. See console for details.");
+      
+      // Show more specific error message to user
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      alert(`Failed to create loan: ${errorMessage}`);
     } finally {
       console.log("🏁 CreateLoan: Loan creation process completed, resetting creating state");
       setIsCreating(false);
@@ -337,15 +370,28 @@ const CreateLoan = () => {
                   id="image"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  disabled={isUploadingImage || isCreating}
+                  className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    (isUploadingImage || isCreating) ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   required
                 />
               </div>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                This image will be used as the graphic for your loan NFT tokens
+                This image will be used as the graphic for your loan NFT tokens (Max: 10MB, JPEG/PNG/GIF/WebP)
               </p>
               
-              {imagePreview && (
+              {isUploadingImage && (
+                <div className="mt-2 flex items-center text-sm text-indigo-600 dark:text-indigo-400">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Uploading to IPFS...
+                </div>
+              )}
+              
+              {imagePreview && !isUploadingImage && (
                 <div className="mt-4">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview:</p>
                   <img
