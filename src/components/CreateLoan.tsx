@@ -120,6 +120,10 @@ const CreateLoan = () => {
       const durationSeconds = parseInt(duration);
       const fundingPeriod = 604800; // 1 week in seconds
       
+      // Calculate target repayment date (current time + duration)
+      const currentTimestamp = Math.floor(Date.now() / 1000); // Convert to seconds
+      const targetRepaymentDate = currentTimestamp + durationSeconds;
+      
       console.log("📊 CreateLoan: Processed parameters:", {
         loanAmountWei: loanAmountWei.toString(),
         loanAmountETH: parseFloat(loanAmount),
@@ -127,6 +131,9 @@ const CreateLoan = () => {
         interestRatePercent: interestRateBps / 100,
         durationSeconds,
         durationDays: durationSeconds / 86400,
+        currentTimestamp,
+        targetRepaymentDate,
+        targetRepaymentDateReadable: new Date(targetRepaymentDate * 1000).toLocaleString(),
         fundingPeriod,
         fundingPeriodDays: fundingPeriod / 86400
       });
@@ -138,11 +145,11 @@ const CreateLoan = () => {
       console.log("📝 CreateLoan: Preparing contract call...");
       const transaction = prepareContractCall({
         contract,
-        method: "function createLoan(uint256 _loanAmount, uint256 _interestRate, uint256 _duration, uint256 _fundingPeriod, string _description, string _imageURI)",
+        method: "function createLoan(uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingPeriod, string _description, string _baseImageURI)",
         params: [
           loanAmountWei,
           BigInt(interestRateBps),
-          BigInt(durationSeconds),
+          BigInt(targetRepaymentDate),
           BigInt(fundingPeriod),
           description,
           imageURI
@@ -152,8 +159,9 @@ const CreateLoan = () => {
       console.log("🔗 CreateLoan: Transaction prepared:", transaction);
       console.log("📤 CreateLoan: Transaction parameters:", {
         loanAmount: loanAmountWei.toString(),
-        interestRate: interestRateBps,
-        duration: durationSeconds,
+        thankYouAmount: interestRateBps,
+        targetRepaymentDate: targetRepaymentDate,
+        targetRepaymentDateReadable: new Date(targetRepaymentDate * 1000).toLocaleString(),
         fundingPeriod: fundingPeriod,
         description,
         imageURI
@@ -169,7 +177,8 @@ const CreateLoan = () => {
             amount: parseFloat(loanAmount) + " USD",
             thankYouAmount: (interestRateBps / 100) + "%",
             totalRepayment: (parseFloat(loanAmount) * (1 + interestRateBps / 10000)) + " USD",
-            targetRepaymentDays: (durationSeconds / 86400) + " days",
+            targetRepaymentDate: new Date(targetRepaymentDate * 1000).toLocaleDateString(),
+            targetRepaymentDays: (durationSeconds / 86400) + " days from now",
             imageURI,
             creator: address
           });
