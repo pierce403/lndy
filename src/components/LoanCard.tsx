@@ -1,6 +1,8 @@
 import { useActiveAccount } from "thirdweb/react";
 import { Loan } from "../types/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { readContract } from "thirdweb";
+import { getLoanContract } from "../lib/client";
 import Modal from "./Modal";
 import FundingModal from "./FundingModal";
 import RepaymentModal from "./RepaymentModal";
@@ -17,6 +19,8 @@ const LoanCard = ({ loan }: LoanCardProps) => {
   const [showRepaymentModal, setShowRepaymentModal] = useState<boolean>(false);
   const [showFundingSuccessModal, setShowFundingSuccessModal] = useState<boolean>(false);
   const [showRepaymentSuccessModal, setShowRepaymentSuccessModal] = useState<boolean>(false);
+  const [actualRepaidAmount, setActualRepaidAmount] = useState<number>(0);
+  const [totalRepaidAmount, setTotalRepaidAmount] = useState<number>(0);
   const [fundingSuccessDetails, setFundingSuccessDetails] = useState<{
     transactionHash: string;
     amountFunded: string;
@@ -25,6 +29,32 @@ const LoanCard = ({ loan }: LoanCardProps) => {
     transactionHash: string;
     amountRepaid: string;
   } | null>(null);
+
+  // Fetch repayment data for active loans
+  useEffect(() => {
+    const fetchRepaymentData = async () => {
+      if (!loan.isActive || loan.isRepaid) {
+        return;
+      }
+
+      try {
+        const loanContract = getLoanContract(loan.address);
+        const loanDetails = await readContract({
+          contract: loanContract,
+          method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
+          params: [],
+        });
+        
+        setTotalRepaidAmount(Number(loanDetails[8]) / 1e6); // totalRepaidAmount
+        setActualRepaidAmount(Number(loanDetails[9]) / 1e6); // actualRepaidAmount
+        
+      } catch (error) {
+        console.error("❌ LoanCard: Failed to fetch repayment data:", error);
+      }
+    };
+
+    fetchRepaymentData();
+  }, [loan.address, loan.isActive, loan.isRepaid]);
 
   const progressPercentage = loan.loanAmount > 0 
     ? Number((loan.totalFunded * BigInt(100)) / loan.loanAmount)
@@ -58,9 +88,8 @@ const LoanCard = ({ loan }: LoanCardProps) => {
     const timeElapsed = now - loanStartTime;
     const timeProgress = Math.max(0, Math.min(100, (timeElapsed / totalDuration) * 100));
     
-    // For now, assume no repayment has been made yet (repaymentProgress = 0)
-    // In a real implementation, you'd track actual repayments
-    const repaymentProgress = 0;
+    // Calculate actual repayment progress
+    const repaymentProgress = totalRepaidAmount > 0 ? (actualRepaidAmount / totalRepaidAmount) * 100 : 0;
     
     // Health is good if repayment is keeping up with time
     // Yellow if behind, red if significantly behind
@@ -78,7 +107,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
     
     return {
       timeProgress,
-      repaymentProgress,
+      repaymentProgress: Math.round(repaymentProgress * 10) / 10, // Round to 1 decimal
       healthStatus,
       healthColor
     };
@@ -100,6 +129,11 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       amountRepaid: amount
     });
     setShowRepaymentSuccessModal(true);
+    
+    // Refresh repayment data after successful repayment
+    setTimeout(() => {
+      window.location.reload(); // Simple refresh to update all data
+    }, 2000);
   };
 
   // Check if current user is the borrower
