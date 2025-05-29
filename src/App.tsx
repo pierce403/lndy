@@ -7,9 +7,10 @@ import "./App.css";
 import CreateLoan from "./components/CreateLoan";
 import LoanList from "./components/LoanList";
 import Dashboard from "./components/Dashboard";
+import MyLoans from "./pages/MyLoans";
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"browse" | "create" | "dashboard">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "create" | "myloans" | "dashboard">("browse");
 
   // Check if required environment variables are set
   const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID;
@@ -75,6 +76,16 @@ function App() {
               </button>
               <button
                 className={`px-3 py-4 text-sm font-medium ${
+                  activeTab === "myloans"
+                    ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+                onClick={() => setActiveTab("myloans")}
+              >
+                My Loans
+              </button>
+              <button
+                className={`px-3 py-4 text-sm font-medium ${
                   activeTab === "dashboard"
                     ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -90,6 +101,7 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {activeTab === "browse" && <LoanList />}
           {activeTab === "create" && <CreateLoan />}
+          {activeTab === "myloans" && <MyLoans />}
           {activeTab === "dashboard" && <Dashboard />}
         </main>
 
