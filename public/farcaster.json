@@ -1,0 +1,16 @@
+{
+  "name": "LNDY",
+  "description": "Social lending on Base. Create and fund crypto-native loans with people you trust.",
+  "icon": "/lndy-favicon.svg",
+  "splash_image": "/lndy-favicon.svg",
+  "splash_color": "#111827",
+  "theme": {
+    "primary": "#4f46e5",
+    "secondary": "#06b6d4",
+    "background": "#111827"
+  },
+  "web_app": {
+    "manifest": "/manifest.webmanifest",
+    "mobile_optimized": true
+  }
+}
