@@ -13,7 +13,8 @@ import MyLoans from "./pages/MyLoans";
 import About from "./components/About";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useIsFarcasterPreferred } from "./hooks/useIsFarcasterPreferred";
-import { FarcasterWalletProvider, useFarcasterWalletContext } from "./context/FarcasterWalletContext";
+import { FarcasterWalletProvider } from "./context/FarcasterWalletContext";
+import { useFarcasterWalletContext } from "./hooks/useFarcasterWalletContext";
 
 type AppShellProps = {
   client: ThirdwebClient;

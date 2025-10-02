@@ -1,5 +1,5 @@
 import { useActiveWallet } from "thirdweb/react";
-import { useFarcasterWalletContext } from "../context/FarcasterWalletContext";
+import { useFarcasterWalletContext } from "./useFarcasterWalletContext";
 
 /**
  * Unified wallet hook that provides the active wallet from either

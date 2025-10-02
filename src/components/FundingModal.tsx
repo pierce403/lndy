@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useWallet } from "../hooks/useWallet";
 import { prepareContractCall, getContract, readContract } from "thirdweb";
 import { getLoanContract } from "../lib/client";
@@ -30,11 +30,15 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
   const fundedPercentage = loan.loanAmount > 0 ? Number((loan.totalFunded * BigInt(100)) / loan.loanAmount) : 0;
   
   // USDC contract on Base
-  const usdcContract = getContract({
-    client,
-    chain: base,
-    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
-  });
+  const usdcContract = useMemo(
+    () =>
+      getContract({
+        client,
+        chain: base,
+        address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+      }),
+    [],
+  );
 
   // Reset state when modal opens
   useEffect(() => {
@@ -75,7 +79,7 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
     };
 
     fetchUsdcBalance();
-  }, [address, isOpen]);
+  }, [address, isOpen, usdcContract]);
 
   const handlePercentageClick = (percentage: number) => {
     const maxAmount = Math.min(remainingAmount, usdcBalance);

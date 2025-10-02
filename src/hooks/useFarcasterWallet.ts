@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import type { EIP1193Provider } from "viem";
 
-interface FarcasterWallet {
+export interface FarcasterWallet {
   address: string;
   fid: number;
   username?: string;
@@ -209,3 +209,5 @@ export const useFarcasterWallet = () => {
     provider,
   };
 };
+
+export type FarcasterWalletContextValue = ReturnType<typeof useFarcasterWallet>;

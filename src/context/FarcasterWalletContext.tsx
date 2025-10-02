@@ -1,9 +1,6 @@
-import { createContext, useContext, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useFarcasterWallet } from "../hooks/useFarcasterWallet";
-
-type FarcasterWalletContextValue = ReturnType<typeof useFarcasterWallet>;
-
-const FarcasterWalletContext = createContext<FarcasterWalletContextValue | null>(null);
+import { FarcasterWalletContext } from "./farcasterWalletContext";
 
 interface FarcasterWalletProviderProps {
   children: ReactNode;
@@ -18,5 +15,3 @@ export const FarcasterWalletProvider = ({ children }: FarcasterWalletProviderPro
     </FarcasterWalletContext.Provider>
   );
 };
-
-export const useFarcasterWalletContext = () => useContext(FarcasterWalletContext);
