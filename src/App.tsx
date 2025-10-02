@@ -24,7 +24,7 @@ const AppShell = ({ client }: AppShellProps) => {
   const activeWallet = useActiveWallet();
   const { isConnecting } = useConnectModal();
   const isFarcasterPreferred = useIsFarcasterPreferred();
-  const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected, error: farcasterError } = useFarcasterWallet();
+  const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected, error: farcasterError, isDisabled: farcasterDisabled } = useFarcasterWallet();
   const hasPromptedRef = useRef(false);
 
   const wallets = useMemo(
@@ -110,7 +110,7 @@ const AppShell = ({ client }: AppShellProps) => {
                     </div>
                   </div>
                 </div>
-              ) : isFarcasterPreferred ? (
+              ) : isFarcasterPreferred && !farcasterDisabled ? (
                 <div className="flex flex-col items-end gap-2">
                   <button
                     onClick={() => {

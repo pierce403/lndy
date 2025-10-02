@@ -17,6 +17,7 @@ export const useFarcasterWallet = () => {
   const [wallet, setWallet] = useState<FarcasterWallet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDisabled, setIsDisabled] = useState(false);
 
   useEffect(() => {
     const initializeWallet = async () => {
@@ -27,8 +28,15 @@ export const useFarcasterWallet = () => {
 
         // Check if we're in a Farcaster Mini App environment
         console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
-        const isInFarcaster = await sdk.actions.isInFarcaster();
-        console.log("🔧 useFarcasterWallet: isInFarcaster =", isInFarcaster);
+        let isInFarcaster;
+        try {
+          isInFarcaster = await sdk.actions.isInFarcaster();
+          console.log("🔧 useFarcasterWallet: isInFarcaster =", isInFarcaster, typeof isInFarcaster);
+        } catch (err) {
+          console.error("❌ Error checking isInFarcaster:", err);
+          setIsLoading(false);
+          return;
+        }
         
         if (!isInFarcaster) {
           console.log("Not in Farcaster environment, skipping embedded wallet");
@@ -37,7 +45,17 @@ export const useFarcasterWallet = () => {
         }
 
         // Get the Ethereum provider from Farcaster
-        const provider = await sdk.wallet.getEthereumProvider();
+        console.log("🔧 useFarcasterWallet: Getting Ethereum provider");
+        let provider;
+        try {
+          provider = await sdk.wallet.getEthereumProvider();
+          console.log("🔧 useFarcasterWallet: Provider =", provider, typeof provider);
+        } catch (err) {
+          console.error("❌ Error getting provider:", err);
+          setIsLoading(false);
+          return;
+        }
+        
         if (!provider) {
           console.log("No Ethereum provider available");
           setIsLoading(false);
@@ -46,46 +64,77 @@ export const useFarcasterWallet = () => {
 
         // Get user info from context
         console.log("🔍 SDK context:", sdk.context);
-        const user = sdk.context.user;
+        let user;
+        try {
+          user = sdk.context.user;
+          console.log("👤 User context:", user, typeof user);
+        } catch (err) {
+          console.error("❌ Error accessing user context:", err);
+          setIsLoading(false);
+          return;
+        }
+        
         if (!user) {
           console.log("No user context available");
           setIsLoading(false);
           return;
         }
-        console.log("👤 User context:", user);
+        
         console.log("👤 User fid:", user.fid, typeof user.fid);
         console.log("👤 User username:", user.username, typeof user.username);
         console.log("👤 User displayName:", user.displayName, typeof user.displayName);
         console.log("👤 User pfpUrl:", user.pfpUrl, typeof user.pfpUrl);
         
         // Get the first account from the provider
-        const accounts = await provider.request({ method: 'eth_accounts' });
+        console.log("🔧 useFarcasterWallet: Requesting accounts");
+        let accounts;
+        try {
+          accounts = await provider.request({ method: 'eth_accounts' });
+          console.log("🔧 useFarcasterWallet: Accounts =", accounts, typeof accounts);
+        } catch (err) {
+          console.error("❌ Error requesting accounts:", err);
+          setIsLoading(false);
+          return;
+        }
+        
         if (!accounts || accounts.length === 0) {
           console.log("No accounts available");
           setIsLoading(false);
           return;
         }
 
-        const farcasterWallet: FarcasterWallet = {
-          address: accounts[0],
-          fid: typeof user.fid === 'number' ? user.fid : parseInt(String(user.fid || 0)),
-          username: typeof user.username === 'string' ? user.username : String(user.username || ''),
-          displayName: typeof user.displayName === 'string' ? user.displayName : String(user.displayName || ''),
-          pfpUrl: typeof user.pfpUrl === 'string' ? user.pfpUrl : String(user.pfpUrl || ''),
-        };
+        console.log("🔧 useFarcasterWallet: Creating wallet object");
+        let farcasterWallet: FarcasterWallet;
+        try {
+          farcasterWallet = {
+            address: String(accounts[0] || ''),
+            fid: typeof user.fid === 'number' ? user.fid : parseInt(String(user.fid || 0)),
+            username: typeof user.username === 'string' ? user.username : String(user.username || ''),
+            displayName: typeof user.displayName === 'string' ? user.displayName : String(user.displayName || ''),
+            pfpUrl: typeof user.pfpUrl === 'string' ? user.pfpUrl : String(user.pfpUrl || ''),
+          };
+          console.log("✅ Farcaster embedded wallet created:", farcasterWallet);
+        } catch (err) {
+          console.error("❌ Error creating wallet object:", err);
+          setIsLoading(false);
+          return;
+        }
 
-        console.log("✅ Farcaster embedded wallet connected:", farcasterWallet);
         setWallet(farcasterWallet);
       } catch (err) {
         console.error("❌ Failed to initialize Farcaster embedded wallet:", err);
         setError(err instanceof Error ? err.message : "Failed to connect wallet");
+        setIsDisabled(true);
       } finally {
         setIsLoading(false);
       }
     };
 
-    initializeWallet();
-  }, []);
+    // Only initialize if not disabled
+    if (!isDisabled) {
+      initializeWallet();
+    }
+  }, [isDisabled]);
 
   const connect = async () => {
     try {
@@ -140,5 +189,6 @@ export const useFarcasterWallet = () => {
     connect,
     disconnect,
     isConnected: !!wallet,
+    isDisabled,
   };
 };
