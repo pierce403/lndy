@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 
+type MiniAppWindow = Window & {
+  farcaster?: {
+    miniApp?: unknown;
+  };
+  FarcasterMiniApp?: unknown;
+};
+
 interface FarcasterWallet {
   address: string;
   fid: number;
@@ -30,7 +37,7 @@ export const useFarcasterWallet = () => {
         console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
         
         // Check for Farcaster bridge in window object
-        const win = window as any;
+        const win = window as MiniAppWindow;
         const hasFarcasterBridge = Boolean(win.farcaster);
         const hasMiniApp = Boolean(win.farcaster?.miniApp || win.FarcasterMiniApp);
         
@@ -54,7 +61,7 @@ export const useFarcasterWallet = () => {
           setIsLoading(false);
           return;
         }
-        
+
         if (!provider) {
           console.log("No Ethereum provider available");
           setIsLoading(false);
@@ -62,13 +69,14 @@ export const useFarcasterWallet = () => {
         }
 
         // Get user info from context
-        console.log("🔍 SDK context:", sdk.context);
+        console.log("🔍 SDK context promise detected");
         let user;
         try {
-          user = sdk.context.user;
+          const context = await sdk.context;
+          user = context?.user;
           console.log("👤 User context:", user, typeof user);
         } catch (err) {
-          console.error("❌ Error accessing user context:", err);
+          console.error("❌ Error resolving user context:", err);
           setIsLoading(false);
           return;
         }
@@ -88,7 +96,7 @@ export const useFarcasterWallet = () => {
         console.log("🔧 useFarcasterWallet: Requesting accounts");
         let accounts;
         try {
-          accounts = await provider.request({ method: 'eth_accounts' });
+          accounts = await provider.request({ method: 'eth_accounts', params: [] });
           console.log("🔧 useFarcasterWallet: Accounts =", accounts, typeof accounts);
         } catch (err) {
           console.error("❌ Error requesting accounts:", err);
@@ -105,8 +113,9 @@ export const useFarcasterWallet = () => {
         console.log("🔧 useFarcasterWallet: Creating wallet object");
         let farcasterWallet: FarcasterWallet;
         try {
+          const address = String(accounts[0] || '');
           farcasterWallet = {
-            address: String(accounts[0] || ''),
+            address,
             fid: typeof user.fid === 'number' ? user.fid : parseInt(String(user.fid || 0)),
             username: typeof user.username === 'string' ? user.username : String(user.username || ''),
             displayName: typeof user.displayName === 'string' ? user.displayName : String(user.displayName || ''),
@@ -147,19 +156,20 @@ export const useFarcasterWallet = () => {
       }
 
       // Request accounts from the provider
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const accounts = await provider.request({ method: 'eth_requestAccounts', params: [] });
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts available");
       }
 
       // Get user info from context
-      const user = sdk.context.user;
+      const context = await sdk.context;
+      const user = context?.user;
       if (!user) {
         throw new Error("No user context available");
       }
-      
+
       const farcasterWallet: FarcasterWallet = {
-        address: accounts[0],
+        address: String(accounts[0] || ''),
         fid: typeof user.fid === 'number' ? user.fid : parseInt(String(user.fid || 0)),
         username: typeof user.username === 'string' ? user.username : String(user.username || ''),
         displayName: typeof user.displayName === 'string' ? user.displayName : String(user.displayName || ''),
