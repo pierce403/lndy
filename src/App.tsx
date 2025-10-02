@@ -2,7 +2,7 @@ import { ThirdwebProvider, ConnectButton, useActiveWallet, useConnectModal } fro
 import { createThirdwebClient, type ThirdwebClient } from "thirdweb";
 import { base } from "thirdweb/chains";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { createWallet, walletConnect } from "thirdweb/wallets";
 import { sdk } from "@farcaster/miniapp-sdk";
 import "./App.css";
 
@@ -27,18 +27,10 @@ const AppShell = ({ client }: AppShellProps) => {
   const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected, error: farcasterError, isDisabled: farcasterDisabled } = useFarcasterWallet();
   const hasPromptedRef = useRef(false);
 
-  const wallets = useMemo(
+  const browserWallets = useMemo(
     () => [
-      inAppWallet({
-        auth: {
-          options: ["farcaster", "email", "google", "passkey", "guest"],
-        },
-        metadata: {
-          name: "LNDY",
-          icon: "/lndy-favicon.svg",
-        },
-      }),
       createWallet("io.metamask"),
+      walletConnect(),
       createWallet("com.coinbase.wallet"),
       createWallet("me.rainbow"),
     ],
@@ -86,7 +78,7 @@ const AppShell = ({ client }: AppShellProps) => {
 
     // Try to connect Farcaster embedded wallet first
     void connectFarcaster().catch((error) => {
-      console.debug("Farcaster embedded wallet not available, falling back to Thirdweb:", error);
+      console.debug("Farcaster embedded wallet not available, falling back to browser wallets:", error);
     });
   }, [
     isFarcasterPreferred,
@@ -104,69 +96,100 @@ const AppShell = ({ client }: AppShellProps) => {
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">LNDY</h1>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Social lending powered by Ethereum</p>
             </div>
-            <div className="flex flex-col items-stretch sm:items-end gap-2">
-              {isFarcasterConnected ? (
-                <div className="flex items-center space-x-3">
-                  {farcasterWallet?.pfpUrl && (
-                    <img 
-                      src={farcasterWallet.pfpUrl} 
-                      alt={farcasterWallet.displayName || farcasterWallet.username}
-                      className="w-8 h-8 rounded-full"
-                    />
-                  )}
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {farcasterWallet?.displayName || farcasterWallet?.username || "Farcaster User"}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {farcasterWallet?.address?.substring(0, 6)}...{farcasterWallet?.address?.substring(38)}
+            <div className="flex flex-col items-stretch sm:items-end gap-3 w-full sm:w-auto">
+              {isFarcasterConnected && farcasterWallet ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-purple-800 dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-200">
+                  <div className="flex items-center gap-3">
+                    {farcasterWallet.pfpUrl && (
+                      <img
+                        src={farcasterWallet.pfpUrl}
+                        alt={farcasterWallet.displayName || farcasterWallet.username}
+                        className="w-10 h-10 rounded-full border border-purple-200 dark:border-purple-800"
+                      />
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {farcasterWallet.displayName || farcasterWallet.username || "Farcaster User"}
+                      </p>
+                      <p className="text-xs font-mono opacity-80">
+                        {farcasterWallet.address?.substring(0, 6)}...{farcasterWallet.address?.substring(38)}
+                      </p>
                     </div>
                   </div>
+                  <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200">
+                    Farcaster Wallet
+                  </span>
                 </div>
-              ) : isFarcasterPreferred && !farcasterDisabled ? (
-                <div className="flex flex-col items-end gap-2">
-                  <button
-                    onClick={() => {
-                      console.log("🔗 Connect Farcaster button clicked");
-                      connectFarcaster().catch(console.error);
-                    }}
-                    disabled={farcasterLoading}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-md transition-colors"
-                  >
-                    {farcasterLoading ? "Connecting..." : "Connect Farcaster Wallet"}
-                  </button>
-                  {farcasterLoading && (
-                    <p className="text-xs text-purple-600 dark:text-purple-300">
-                      Initializing Farcaster wallet...
-                    </p>
-                  )}
-                  {farcasterError && (
-                    <p className="text-xs text-red-600 dark:text-red-300">
-                      Error: {farcasterError}
-                    </p>
-                  )}
+              ) : null}
+
+              {!isFarcasterConnected && isFarcasterPreferred && !farcasterDisabled ? (
+                <div className="rounded-lg border border-purple-200 bg-white px-4 py-4 shadow-sm dark:border-purple-900/60 dark:bg-purple-950/30">
+                  <div className="flex flex-col gap-3 text-sm text-purple-900 dark:text-purple-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">Farcaster Mini App detected</p>
+                        <p className="text-xs text-purple-600 dark:text-purple-300">
+                          Connect with your embedded wallet for the smoothest experience.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/60 dark:text-purple-200">
+                        Recommended
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        console.log("🔗 Connect Farcaster button clicked");
+                        connectFarcaster().catch(console.error);
+                      }}
+                      disabled={farcasterLoading}
+                      className="flex items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
+                    >
+                      {farcasterLoading ? "Connecting..." : "Connect Farcaster Wallet"}
+                    </button>
+
+                    {farcasterLoading && (
+                      <p className="text-xs text-purple-600 dark:text-purple-300">Initializing Farcaster wallet...</p>
+                    )}
+                    {farcasterError && (
+                      <p className="text-xs text-red-600 dark:text-red-300">Error: {farcasterError}</p>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <ConnectButton
-                  client={client}
-                  chain={base}
-                  wallets={wallets}
-                  connectButton={{
-                    label: activeWallet || isConnecting ? undefined : "Connect Wallet",
-                  }}
-                  connectModal={{
-                    size: "compact",
-                    title: "Sign in to LNDY",
-                    titleIcon: "/lndy-favicon.svg",
-                    showThirdwebBranding: false,
-                  }}
-                />
+              ) : null}
+
+              {(!isFarcasterPreferred || farcasterDisabled) && (
+                <div className="rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Connect a browser wallet</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Supports MetaMask, WalletConnect, Coinbase Wallet, Rainbow, and more.
+                      </p>
+                    </div>
+                    <ConnectButton
+                      client={client}
+                      chain={base}
+                      wallets={browserWallets}
+                      connectButton={{
+                        label: activeWallet || isConnecting ? undefined : "Connect Wallet",
+                      }}
+                      connectModal={{
+                        size: "wide",
+                        title: "Connect a wallet",
+                        titleIcon: "/lndy-favicon.svg",
+                        showThirdwebBranding: false,
+                      }}
+                    />
+                  </div>
+                </div>
               )}
-              {isFarcasterPreferred && !isFarcasterConnected && !farcasterLoading && (
+
+              {isFarcasterPreferred && !isFarcasterConnected && !farcasterLoading && !farcasterDisabled ? (
                 <p className="text-xs text-purple-600 dark:text-purple-300 text-right">
                   Use your Farcaster embedded wallet for seamless access
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
