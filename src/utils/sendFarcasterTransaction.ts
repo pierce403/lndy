@@ -32,6 +32,25 @@ const sanitizeRequest = (request: Record<string, unknown>) => {
   return cleaned;
 };
 
+const resolvePromisedValue = async <T>(
+  value: T | (() => Promise<T>) | Promise<T> | undefined,
+): Promise<T | undefined> => {
+  if (typeof value === "function") {
+    return await (value as () => Promise<T>)();
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "then" in (value as Record<string, unknown>) &&
+    typeof (value as { then?: unknown }).then === "function"
+  ) {
+    return await (value as Promise<T>);
+  }
+
+  return value as T | undefined;
+};
+
 export const sendFarcasterTransaction = async ({
   transaction,
   provider,
@@ -41,7 +60,7 @@ export const sendFarcasterTransaction = async ({
   provider: EIP1193Provider;
   fromAddress: string;
 }): Promise<WaitForReceiptOptions> => {
- const toAddress =
+  const toAddress =
     transaction.to ||
     ((transaction as unknown as { __contract?: { address?: string } }).__contract?.address ?? undefined);
 
@@ -49,19 +68,30 @@ export const sendFarcasterTransaction = async ({
     throw new Error("Missing contract address for Farcaster transaction");
   }
 
+  const [data, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas, nonce, value, accessList] = await Promise.all([
+    resolvePromisedValue(transaction.data),
+    resolvePromisedValue(transaction.gas),
+    resolvePromisedValue(transaction.gasPrice),
+    resolvePromisedValue(transaction.maxFeePerGas),
+    resolvePromisedValue(transaction.maxPriorityFeePerGas),
+    resolvePromisedValue(transaction.nonce),
+    resolvePromisedValue(transaction.value),
+    resolvePromisedValue(transaction.accessList),
+  ]);
+
   const request = sanitizeRequest({
     from: fromAddress,
     to: toAddress,
 
-    data: transaction.data,
-    value: toHex(transaction.value),
-    gas: toHex(transaction.gas),
-    gasPrice: toHex(transaction.gasPrice),
-    maxFeePerGas: toHex(transaction.maxFeePerGas),
-    maxPriorityFeePerGas: toHex(transaction.maxPriorityFeePerGas),
+    data,
+    value: toHex(value),
+    gas: toHex(gas),
+    gasPrice: toHex(gasPrice),
+    maxFeePerGas: toHex(maxFeePerGas),
+    maxPriorityFeePerGas: toHex(maxPriorityFeePerGas),
     chainId: `0x${transaction.chain.id.toString(16)}`,
-    nonce: toHex(transaction.nonce),
-    accessList: transaction.accessList,
+    nonce: toHex(nonce),
+    accessList,
   });
 
   const transactionHash = (await provider.request({
