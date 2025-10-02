@@ -3,6 +3,7 @@ import { createThirdwebClient, type ThirdwebClient } from "thirdweb";
 import { base } from "thirdweb/chains";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { sdk } from "@farcaster/miniapp-sdk";
 import "./App.css";
 
 import CreateLoan from "./components/CreateLoan";
@@ -41,6 +42,15 @@ const AppShell = ({ client }: AppShellProps) => {
     [],
   );
 
+  // Initialize Farcaster Mini App SDK
+  useEffect(() => {
+    // Signal to Farcaster that the app is ready to be displayed
+    sdk.actions.ready().catch((error) => {
+      console.debug("Failed to signal ready to Farcaster SDK:", error);
+    });
+  }, []);
+
+  // Auto-connect Farcaster wallet if preferred
   useEffect(() => {
     if (!isFarcasterPreferred || activeWallet || isConnecting || hasPromptedRef.current) {
       return;
