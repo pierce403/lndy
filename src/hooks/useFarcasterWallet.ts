@@ -209,3 +209,5 @@ export const useFarcasterWallet = () => {
     provider,
   };
 };
+
+export type FarcasterWalletContextValue = ReturnType<typeof useFarcasterWallet>;

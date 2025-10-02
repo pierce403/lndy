@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getIpfsGatewayUrls } from '../utils/ipfs';
+import { useState, useEffect, useMemo } from "react";
+import { getIpfsGatewayUrls } from "../utils/ipfs";
 
 interface IpfsImageProps {
   src: string;
@@ -8,11 +8,11 @@ interface IpfsImageProps {
 }
 
 const IpfsImage = ({ src, alt, className }: IpfsImageProps) => {
-  const [currentSrc, setCurrentSrc] = useState<string>('');
+  const [currentSrc, setCurrentSrc] = useState<string>("");
   const [gatewayIndex, setGatewayIndex] = useState<number>(0);
   const [hasError, setHasError] = useState<boolean>(false);
 
-  const gatewayUrls = getIpfsGatewayUrls(src);
+  const gatewayUrls = useMemo(() => getIpfsGatewayUrls(src), [src]);
 
   useEffect(() => {
     if (gatewayUrls.length > 0) {
@@ -20,7 +20,7 @@ const IpfsImage = ({ src, alt, className }: IpfsImageProps) => {
       setGatewayIndex(0);
       setHasError(false);
     }
-  }, [src]);
+  }, [gatewayUrls]);
 
   const handleError = () => {
     console.warn("IPFS Image load failed:");
@@ -66,4 +66,4 @@ const IpfsImage = ({ src, alt, className }: IpfsImageProps) => {
   );
 };
 
-export default IpfsImage; 
+export default IpfsImage;

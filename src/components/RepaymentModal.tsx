@@ -32,11 +32,15 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
   const repaidPercentage = totalRepaidAmount > 0 ? (actualRepaidAmount / totalRepaidAmount) * 100 : 0;
   
   // USDC contract on Base
-  const usdcContract = getContract({
-    client,
-    chain: base,
-    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
-  });
+  const usdcContract = useMemo(
+    () =>
+      getContract({
+        client,
+        chain: base,
+        address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+      }),
+    [],
+  );
 
   // Reset state when modal opens
   useEffect(() => {
@@ -88,7 +92,7 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
     };
 
     fetchData();
-  }, [address, isOpen, loan.address]);
+  }, [address, isOpen, loan.address, usdcContract]);
 
   const handlePercentageClick = (percentage: number) => {
     const maxAmount = Math.min(remainingAmount, usdcBalance);

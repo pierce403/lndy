@@ -31,7 +31,7 @@ export const sendFarcasterTransaction = async ({
   provider: EIP1193Provider;
   fromAddress: string;
 }): Promise<WaitForReceiptOptions> => {
-  const toAddress =
+ const toAddress =
     transaction.to ||
     ((transaction as unknown as { __contract?: { address?: string } }).__contract?.address ?? undefined);
 
@@ -42,6 +42,7 @@ export const sendFarcasterTransaction = async ({
   const request = sanitizeRequest({
     from: fromAddress,
     to: toAddress,
+
     data: transaction.data,
     value: toHex(transaction.value),
     gas: toHex(transaction.gas),
