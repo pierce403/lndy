@@ -12,6 +12,7 @@ const CreateLoan = () => {
   const [loanAmount, setLoanAmount] = useState<string>("100");
   const [interestRate, setInterestRate] = useState<string>("1000"); // 10% in basis points
   const [duration, setDuration] = useState<string>("2592000"); // 30 days in seconds
+  const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -183,12 +184,13 @@ const CreateLoan = () => {
       console.log("📝 CreateLoan: Preparing contract call...");
       const transaction = prepareContractCall({
         contract,
-        method: "function createLoan(uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingPeriod, string _description, string _baseImageURI)",
+        method: "function createLoan(uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingPeriod, string _title, string _description, string _baseImageURI)",
         params: [
           loanAmountWei,
           BigInt(interestRateBps),
           BigInt(targetRepaymentDate),
           BigInt(fundingPeriod),
+          title,
           description,
           imageURI
         ]
@@ -201,6 +203,7 @@ const CreateLoan = () => {
         targetRepaymentDate: targetRepaymentDate,
         targetRepaymentDateReadable: new Date(targetRepaymentDate * 1000).toLocaleString(),
         fundingPeriod: fundingPeriod,
+        title,
         description,
         imageURI
       });
@@ -365,6 +368,27 @@ const CreateLoan = () => {
               </div>
               
               <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Loan Title
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value.slice(0, 20))}
+                    maxLength={20}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="e.g., Emergency Medical"
+                    required
+                  />
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Short title for your loan (max 20 characters) - {title.length}/20
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Loan Description
                 </label>
@@ -372,14 +396,16 @@ const CreateLoan = () => {
                   <textarea
                     id="description"
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                    maxLength={200}
                     rows={4}
                     className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Describe why you need this loan and how you plan to repay..."
                     required
                   />
                 </div>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Describe the purpose of your loan and why people should fund it
+                  Describe the purpose of your loan and why people should fund it (max 200 characters) - {description.length}/200
                 </p>
               </div>
 
