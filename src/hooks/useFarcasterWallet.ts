@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 
-type MiniAppWindow = Window & {
-  farcaster?: {
-    miniApp?: unknown;
-  };
-  FarcasterMiniApp?: unknown;
-};
-
 interface FarcasterWallet {
   address: string;
   fid: number;
@@ -35,17 +28,19 @@ export const useFarcasterWallet = () => {
 
         // Check if we're in a Farcaster Mini App environment
         console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
-        
-        // Check for Farcaster bridge in window object
-        const win = window as MiniAppWindow;
-        const hasFarcasterBridge = Boolean(win.farcaster);
-        const hasMiniApp = Boolean(win.farcaster?.miniApp || win.FarcasterMiniApp);
-        
-        console.log("🔧 useFarcasterWallet: hasFarcasterBridge =", hasFarcasterBridge);
-        console.log("🔧 useFarcasterWallet: hasMiniApp =", hasMiniApp);
-        
-        if (!hasFarcasterBridge && !hasMiniApp) {
-          console.log("Not in Farcaster environment, skipping embedded wallet");
+
+        let isMiniApp = false;
+        try {
+          isMiniApp = await sdk.isInMiniApp();
+        } catch (err) {
+          console.warn("⚠️ useFarcasterWallet: sdk.isInMiniApp threw", err);
+        }
+
+        console.log("🔧 useFarcasterWallet: isMiniApp =", isMiniApp);
+
+        if (!isMiniApp) {
+          console.log("Not in Farcaster environment, disabling embedded wallet");
+          setIsDisabled(true);
           setIsLoading(false);
           return;
         }
@@ -58,12 +53,14 @@ export const useFarcasterWallet = () => {
           console.log("🔧 useFarcasterWallet: Provider =", provider, typeof provider);
         } catch (err) {
           console.error("❌ Error getting provider:", err);
+          setIsDisabled(true);
           setIsLoading(false);
           return;
         }
 
         if (!provider) {
           console.log("No Ethereum provider available");
+          setIsDisabled(true);
           setIsLoading(false);
           return;
         }
@@ -80,7 +77,7 @@ export const useFarcasterWallet = () => {
           setIsLoading(false);
           return;
         }
-        
+
         if (!user) {
           console.log("No user context available");
           setIsLoading(false);
@@ -103,7 +100,7 @@ export const useFarcasterWallet = () => {
           setIsLoading(false);
           return;
         }
-        
+
         if (!accounts || accounts.length === 0) {
           console.log("No accounts available");
           setIsLoading(false);
