@@ -16,6 +16,7 @@ interface LoanCardProps {
 const LoanCard = ({ loan }: LoanCardProps) => {
   const account = useActiveAccount();
   const address = account?.address;
+  const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [showFundingModal, setShowFundingModal] = useState<boolean>(false);
   const [showRepaymentModal, setShowRepaymentModal] = useState<boolean>(false);
   const [showFundingSuccessModal, setShowFundingSuccessModal] = useState<boolean>(false);
@@ -161,9 +162,12 @@ const LoanCard = ({ loan }: LoanCardProps) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-      {/* NFT Image */}
+      {/* NFT Image - Clickable */}
       {loan.imageURI && (
-        <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
+        <div 
+          className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => setShowDetailModal(true)}
+        >
           <IpfsImage
             src={loan.imageURI}
             alt={loan.description}
@@ -174,8 +178,13 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       
       <div className="p-5">
         <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{loan.title || loan.description}</h3>
+          <div className="flex-1">
+            <h3 
+              className="text-lg font-medium text-gray-900 dark:text-white truncate cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              onClick={() => setShowDetailModal(true)}
+            >
+              {loan.title || loan.description}
+            </h3>
             {/* Farcaster Profile Display */}
             {isLoadingProfile ? (
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
@@ -357,6 +366,224 @@ const LoanCard = ({ loan }: LoanCardProps) => {
           </div>
         )}
       </div>
+
+      {showDetailModal && (
+        <Modal
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          title="Loan Details"
+        >
+          <div className="space-y-4">
+            {/* Image */}
+            {loan.imageURI && (
+              <div className="rounded-lg overflow-hidden">
+                <IpfsImage
+                  src={loan.imageURI}
+                  alt={loan.description}
+                  className="w-full h-64 object-cover"
+                />
+              </div>
+            )}
+            
+            {/* Title */}
+            {loan.title && (
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{loan.title}</h3>
+              </div>
+            )}
+            
+            {/* Description */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</p>
+              <p className="text-gray-900 dark:text-white">{loan.description}</p>
+            </div>
+            
+            {/* Borrower */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Borrower:</p>
+              {farcasterProfile ? (
+                <div className="flex items-center space-x-2">
+                  {farcasterProfile.pfpUrl && (
+                    <img 
+                      src={farcasterProfile.pfpUrl} 
+                      alt={farcasterProfile.displayName || farcasterProfile.username}
+                      className="w-6 h-6 rounded-full"
+                    />
+                  )}
+                  <a 
+                    href={getFarcasterProfileUrl(farcasterProfile.username)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors font-medium"
+                  >
+                    @{farcasterProfile.username}
+                    {farcasterProfile.displayName && farcasterProfile.displayName !== farcasterProfile.username && (
+                      <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
+                        ({farcasterProfile.displayName})
+                      </span>
+                    )}
+                  </a>
+                </div>
+              ) : (
+                <a 
+                  href={`https://basescan.org/address/${loan.borrower}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors font-mono text-sm"
+                >
+                  {loan.borrower}
+                </a>
+              )}
+            </div>
+            
+            {/* Loan Details Grid */}
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Loan Amount</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(loan.loanAmount)}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Return</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">${calculateTotalRepayment().toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Thank You Amount</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  ${((Number(loan.loanAmount) / 1e6 * loan.interestRate) / 10000).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</p>
+                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                  loan.isRepaid 
+                    ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" 
+                    : loan.isActive 
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" 
+                      : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
+                }`}>
+                  {loan.isRepaid ? "Repaid" : loan.isActive ? "Active" : "Funding"}
+                </span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Target Repayment</p>
+                <p className="text-gray-900 dark:text-white">{formatDate(loan.repaymentDate)}</p>
+              </div>
+              {!loan.isActive && !loan.isRepaid && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Funding Deadline</p>
+                  <p className="text-gray-900 dark:text-white">{formatDate(loan.fundingDeadline)}</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Funding Progress */}
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-700 dark:text-gray-300 font-medium">Funding Progress</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(loan.totalFunded)} / {formatCurrency(loan.loanAmount)}</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div 
+                  className="bg-indigo-600 dark:bg-indigo-500 h-2.5 rounded-full" 
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+              <div className="text-right text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {progressPercentage}% funded
+              </div>
+            </div>
+            
+            {/* Repayment Health for Active Loans */}
+            {repaymentHealth && loan.isActive && !loan.isRepaid && (
+              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Repayment Health</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    repaymentHealth.healthStatus === 'good' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : repaymentHealth.healthStatus === 'behind'
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                  }`}>
+                    {repaymentHealth.healthStatus === 'good' ? 'On Track' : 
+                     repaymentHealth.healthStatus === 'behind' ? 'Behind Schedule' : 'Needs Attention'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Time elapsed: {Math.round(repaymentHealth.timeProgress)}% • Repaid: {repaymentHealth.repaymentProgress}%
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div className="relative h-2 rounded-full">
+                    <div 
+                      className="absolute top-0 left-0 h-2 bg-gray-400 rounded-full" 
+                      style={{ width: `${repaymentHealth.timeProgress}%` }}
+                    ></div>
+                    <div 
+                      className={`absolute top-0 left-0 h-2 rounded-full ${repaymentHealth.healthColor}`}
+                      style={{ width: `${repaymentHealth.repaymentProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Links */}
+            <div className="flex space-x-3 pt-2">
+              <a 
+                href={`https://opensea.io/assets/base/${loan.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-center py-2 px-4 border border-indigo-600 dark:border-indigo-400 rounded-md text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+              >
+                View on OpenSea →
+              </a>
+              <a 
+                href={`https://basescan.org/address/${loan.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-center py-2 px-4 border border-indigo-600 dark:border-indigo-400 rounded-md text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+              >
+                View Contract →
+              </a>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="pt-2">
+              {!loan.isActive && !loan.isRepaid && Math.floor(Date.now() / 1000) < loan.fundingDeadline ? (
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setShowFundingModal(true);
+                  }}
+                  className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                    !address ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  disabled={!address}
+                >
+                  {address ? "Fund This Loan" : "Connect Wallet to Fund"}
+                </button>
+              ) : loan.isActive && !loan.isRepaid && isBorrower ? (
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setShowRepaymentModal(true);
+                  }}
+                  className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  💳 Repay Loan
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Close
+                </button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {showFundingSuccessModal && (
         <Modal
