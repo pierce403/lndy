@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
+import type { EIP1193Provider } from "viem";
 
 interface FarcasterWallet {
   address: string;
@@ -18,6 +19,7 @@ export const useFarcasterWallet = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [provider, setProvider] = useState<EIP1193Provider | null>(null);
 
   useEffect(() => {
     const initializeWallet = async () => {
@@ -42,6 +44,7 @@ export const useFarcasterWallet = () => {
           console.log("Not in Farcaster environment, disabling embedded wallet");
           setIsDisabled(true);
           setIsLoading(false);
+          setProvider(null);
           return;
         }
 
@@ -55,6 +58,7 @@ export const useFarcasterWallet = () => {
           console.error("❌ Error getting provider:", err);
           setIsDisabled(true);
           setIsLoading(false);
+          setProvider(null);
           return;
         }
 
@@ -62,8 +66,11 @@ export const useFarcasterWallet = () => {
           console.log("No Ethereum provider available");
           setIsDisabled(true);
           setIsLoading(false);
+          setProvider(null);
           return;
         }
+
+        setProvider(provider as EIP1193Provider);
 
         // Get user info from context
         console.log("🔍 SDK context promise detected");
@@ -152,6 +159,8 @@ export const useFarcasterWallet = () => {
         throw new Error("Ethereum provider not available");
       }
 
+      setProvider(provider as EIP1193Provider);
+
       // Request accounts from the provider
       const accounts = await provider.request({ method: 'eth_requestAccounts', params: [] });
       if (!accounts || accounts.length === 0) {
@@ -186,6 +195,7 @@ export const useFarcasterWallet = () => {
   const disconnect = () => {
     setWallet(null);
     setError(null);
+    setProvider(null);
   };
 
   return {
@@ -196,5 +206,6 @@ export const useFarcasterWallet = () => {
     disconnect,
     isConnected: !!wallet,
     isDisabled,
+    provider,
   };
 };

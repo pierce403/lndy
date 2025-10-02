@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useSendTransaction } from "thirdweb/react";
 import { useWallet } from "../hooks/useWallet";
 import { prepareContractCall, getContract, readContract } from "thirdweb";
 import { getLoanContract } from "../lib/client";
@@ -7,6 +6,7 @@ import { client } from "../lib/client";
 import { base } from "thirdweb/chains";
 import Modal from "./Modal";
 import { Loan } from "../types/types";
+import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 
 interface FundingModalProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ interface FundingModalProps {
 
 const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) => {
   const { address } = useWallet();
-  const { mutate: sendTransaction, isPending } = useSendTransaction();
+  const { executeTransaction, isPending } = useTransactionExecutor();
   
   const [fundingAmount, setFundingAmount] = useState<number>(10);
   const [isApproving, setIsApproving] = useState<boolean>(false);
@@ -104,7 +104,7 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
         amountUSDC: fundingAmount
       });
       
-      sendTransaction(approvalTransaction, {
+      executeTransaction(approvalTransaction, {
         onSuccess: (result) => {
           console.log("✅ FundingModal: USDC approval successful:", result.transactionHash);
           setHasApproval(true);
@@ -142,7 +142,7 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
         fundAmountUSDC: fundingAmount
       });
       
-      sendTransaction(transaction, {
+      executeTransaction(transaction, {
         onSuccess: (result) => {
           console.log("🎉 FundingModal: Funding successful:", result.transactionHash);
           onSuccess(result.transactionHash, `${fundingAmount} USDC`);

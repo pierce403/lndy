@@ -10,6 +10,7 @@ export const useWallet = () => {
   const farcasterContext = useFarcasterWalletContext();
   const farcasterWallet = farcasterContext?.wallet ?? null;
   const isFarcasterConnected = farcasterContext?.isConnected ?? false;
+  const farcasterProvider = farcasterContext?.provider ?? null;
 
   // Prioritize Farcaster embedded wallet if available
   if (isFarcasterConnected && farcasterWallet) {
@@ -19,6 +20,7 @@ export const useWallet = () => {
       walletType: "farcaster" as const,
       farcaster: farcasterWallet,
       browser: null,
+      farcasterProvider,
     };
   }
 
@@ -30,6 +32,7 @@ export const useWallet = () => {
       walletType: "browser" as const,
       farcaster: null,
       browser: activeWallet,
+      farcasterProvider: null,
     };
   }
 
@@ -40,5 +43,6 @@ export const useWallet = () => {
     walletType: null,
     farcaster: null,
     browser: null,
+    farcasterProvider: null,
   };
 };
