@@ -3,10 +3,10 @@ import { useFarcasterWallet } from "./useFarcasterWallet";
 
 /**
  * Unified wallet hook that provides the active wallet from either
- * Farcaster embedded wallet or Thirdweb wallet
+ * the Farcaster embedded wallet or a browser-connected wallet.
  */
 export const useWallet = () => {
-  const thirdwebWallet = useActiveWallet();
+  const activeWallet = useActiveWallet();
   const { wallet: farcasterWallet, isConnected: isFarcasterConnected } = useFarcasterWallet();
 
   // Prioritize Farcaster embedded wallet if available
@@ -14,20 +14,20 @@ export const useWallet = () => {
     return {
       address: farcasterWallet.address,
       isConnected: true,
-      walletType: 'farcaster' as const,
+      walletType: "farcaster" as const,
       farcaster: farcasterWallet,
-      thirdweb: null,
+      browser: null,
     };
   }
 
-  // Fall back to Thirdweb wallet
-  if (thirdwebWallet) {
+  // Fall back to any browser wallet connected through Thirdweb
+  if (activeWallet) {
     return {
-      address: thirdwebWallet.address,
+      address: activeWallet.address,
       isConnected: true,
-      walletType: 'thirdweb' as const,
+      walletType: "browser" as const,
       farcaster: null,
-      thirdweb: thirdwebWallet,
+      browser: activeWallet,
     };
   }
 
@@ -37,6 +37,6 @@ export const useWallet = () => {
     isConnected: false,
     walletType: null,
     farcaster: null,
-    thirdweb: null,
+    browser: null,
   };
 };
