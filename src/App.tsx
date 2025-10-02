@@ -13,7 +13,7 @@ import MyLoans from "./pages/MyLoans";
 import About from "./components/About";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useIsFarcasterPreferred } from "./hooks/useIsFarcasterPreferred";
-import { useFarcasterWallet } from "./hooks/useFarcasterWallet";
+import { FarcasterWalletProvider, useFarcasterWalletContext } from "./context/FarcasterWalletContext";
 
 type AppShellProps = {
   client: ThirdwebClient;
@@ -24,7 +24,13 @@ const AppShell = ({ client }: AppShellProps) => {
   const activeWallet = useActiveWallet();
   const { isConnecting } = useConnectModal();
   const isFarcasterPreferred = useIsFarcasterPreferred();
-  const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected, error: farcasterError, isDisabled: farcasterDisabled } = useFarcasterWallet();
+  const farcasterContext = useFarcasterWalletContext();
+  const farcasterWallet = farcasterContext?.wallet ?? null;
+  const farcasterLoading = farcasterContext?.isLoading ?? false;
+  const connectFarcaster = farcasterContext?.connect;
+  const isFarcasterConnected = farcasterContext?.isConnected ?? false;
+  const farcasterError = farcasterContext?.error ?? null;
+  const farcasterDisabled = farcasterContext?.isDisabled ?? false;
   const hasPromptedRef = useRef(false);
 
   const browserWallets = useMemo(
@@ -70,7 +76,7 @@ const AppShell = ({ client }: AppShellProps) => {
 
   // Auto-connect Farcaster embedded wallet if in Farcaster environment
   useEffect(() => {
-    if (!isFarcasterPreferred || isFarcasterConnected || farcasterLoading || hasPromptedRef.current) {
+    if (!isFarcasterPreferred || isFarcasterConnected || farcasterLoading || hasPromptedRef.current || !connectFarcaster) {
       return;
     }
 
@@ -139,10 +145,15 @@ const AppShell = ({ client }: AppShellProps) => {
 
                     <button
                       onClick={() => {
+                        if (!connectFarcaster) {
+                          console.warn("Farcaster connect function unavailable");
+                          return;
+                        }
+
                         console.log("🔗 Connect Farcaster button clicked");
                         connectFarcaster().catch(console.error);
                       }}
-                      disabled={farcasterLoading}
+                      disabled={farcasterLoading || !connectFarcaster}
                       className="flex items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
                     >
                       {farcasterLoading ? "Connecting..." : "Connect Farcaster Wallet"}
@@ -330,7 +341,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThirdwebProvider>
-        <AppShell client={client} />
+        <FarcasterWalletProvider>
+          <AppShell client={client} />
+        </FarcasterWalletProvider>
       </ThirdwebProvider>
     </ErrorBoundary>
   );

@@ -1,5 +1,5 @@
 import { useActiveWallet } from "thirdweb/react";
-import { useFarcasterWallet } from "./useFarcasterWallet";
+import { useFarcasterWalletContext } from "../context/FarcasterWalletContext";
 
 /**
  * Unified wallet hook that provides the active wallet from either
@@ -7,7 +7,9 @@ import { useFarcasterWallet } from "./useFarcasterWallet";
  */
 export const useWallet = () => {
   const activeWallet = useActiveWallet();
-  const { wallet: farcasterWallet, isConnected: isFarcasterConnected } = useFarcasterWallet();
+  const farcasterContext = useFarcasterWalletContext();
+  const farcasterWallet = farcasterContext?.wallet ?? null;
+  const isFarcasterConnected = farcasterContext?.isConnected ?? false;
 
   // Prioritize Farcaster embedded wallet if available
   if (isFarcasterConnected && farcasterWallet) {
