@@ -11,6 +11,7 @@ import LoanList from "./components/LoanList";
 import Dashboard from "./components/Dashboard";
 import MyLoans from "./pages/MyLoans";
 import About from "./components/About";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { useIsFarcasterPreferred } from "./hooks/useIsFarcasterPreferred";
 import { useFarcasterWallet } from "./hooks/useFarcasterWallet";
 
@@ -46,9 +47,15 @@ const AppShell = ({ client }: AppShellProps) => {
 
   // Initialize Farcaster Mini App SDK
   useEffect(() => {
+    console.log("🔧 App: Initializing Farcaster SDK");
+    console.log("🔧 App: SDK object:", sdk);
+    console.log("🔧 App: SDK actions:", sdk.actions);
+    
     // Signal to Farcaster that the app is ready to be displayed
-    sdk.actions.ready().catch((error) => {
-      console.debug("Failed to signal ready to Farcaster SDK:", error);
+    sdk.actions.ready().then(() => {
+      console.log("✅ App: Farcaster SDK ready signal sent successfully");
+    }).catch((error) => {
+      console.error("❌ App: Failed to signal ready to Farcaster SDK:", error);
     });
   }, []);
 
@@ -281,9 +288,11 @@ function App() {
   });
 
   return (
-    <ThirdwebProvider>
-      <AppShell client={client} />
-    </ThirdwebProvider>
+    <ErrorBoundary>
+      <ThirdwebProvider>
+        <AppShell client={client} />
+      </ThirdwebProvider>
+    </ErrorBoundary>
   );
 }
 

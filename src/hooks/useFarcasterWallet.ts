@@ -21,11 +21,15 @@ export const useFarcasterWallet = () => {
   useEffect(() => {
     const initializeWallet = async () => {
       try {
+        console.log("🔧 useFarcasterWallet: Starting initialization");
         setIsLoading(true);
         setError(null);
 
         // Check if we're in a Farcaster Mini App environment
+        console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
         const isInFarcaster = await sdk.actions.isInFarcaster();
+        console.log("🔧 useFarcasterWallet: isInFarcaster =", isInFarcaster);
+        
         if (!isInFarcaster) {
           console.log("Not in Farcaster environment, skipping embedded wallet");
           setIsLoading(false);
