@@ -72,12 +72,12 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
         const loanContract = getLoanContract(loan.address);
         const loanDetails = await readContract({
           contract: loanContract,
-          method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
+          method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _title, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
           params: [],
         });
         
-        setTotalRepaidAmount(Number(loanDetails[8]) / 1e6); // totalRepaidAmount
-        setActualRepaidAmount(Number(loanDetails[9]) / 1e6); // actualRepaidAmount
+        setTotalRepaidAmount(Number(loanDetails[9]) / 1e6); // totalRepaidAmount
+        setActualRepaidAmount(Number(loanDetails[10]) / 1e6); // actualRepaidAmount
         
       } catch (error) {
         console.error("❌ RepaymentModal: Failed to fetch data:", error);
