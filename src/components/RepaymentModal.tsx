@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "../hooks/useWallet";
 import { prepareContractCall, getContract, readContract } from "thirdweb";
 import { getLoanContract } from "../lib/client";

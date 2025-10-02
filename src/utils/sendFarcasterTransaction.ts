@@ -1,5 +1,4 @@
 import type { PreparedTransaction, WaitForReceiptOptions } from "thirdweb";
-import { resolvePromisedValue } from "thirdweb/utils";
 import type { EIP1193Provider, Hex } from "viem";
 
 const toHex = (value: bigint | number | undefined): string | undefined => {
@@ -32,33 +31,9 @@ export const sendFarcasterTransaction = async ({
   provider: EIP1193Provider;
   fromAddress: string;
 }): Promise<WaitForReceiptOptions> => {
-  const resolvedToCandidate =
+ const toAddress =
     transaction.to ||
     ((transaction as unknown as { __contract?: { address?: string } }).__contract?.address ?? undefined);
-
-  const [
-    toAddress,
-    data,
-    value,
-    gas,
-    gasPrice,
-    maxFeePerGas,
-    maxPriorityFeePerGas,
-    maxFeePerBlobGas,
-    nonce,
-    accessList,
-  ] = await Promise.all([
-    resolvePromisedValue(resolvedToCandidate),
-    resolvePromisedValue(transaction.data),
-    resolvePromisedValue(transaction.value),
-    resolvePromisedValue(transaction.gas),
-    resolvePromisedValue(transaction.gasPrice),
-    resolvePromisedValue(transaction.maxFeePerGas),
-    resolvePromisedValue(transaction.maxPriorityFeePerGas),
-    resolvePromisedValue(transaction.maxFeePerBlobGas),
-    resolvePromisedValue(transaction.nonce),
-    resolvePromisedValue(transaction.accessList),
-  ]);
 
   if (!toAddress) {
     throw new Error("Missing contract address for Farcaster transaction");
@@ -67,16 +42,16 @@ export const sendFarcasterTransaction = async ({
   const request = sanitizeRequest({
     from: fromAddress,
     to: toAddress,
-    data,
-    value: toHex(value),
-    gas: toHex(gas),
-    gasPrice: toHex(gasPrice),
-    maxFeePerGas: toHex(maxFeePerGas),
-    maxPriorityFeePerGas: toHex(maxPriorityFeePerGas),
-    maxFeePerBlobGas: toHex(maxFeePerBlobGas),
+
+    data: transaction.data,
+    value: toHex(transaction.value),
+    gas: toHex(transaction.gas),
+    gasPrice: toHex(transaction.gasPrice),
+    maxFeePerGas: toHex(transaction.maxFeePerGas),
+    maxPriorityFeePerGas: toHex(transaction.maxPriorityFeePerGas),
     chainId: `0x${transaction.chain.id.toString(16)}`,
-    nonce: toHex(nonce),
-    accessList,
+    nonce: toHex(transaction.nonce),
+    accessList: transaction.accessList,
   });
 
   const transactionHash = (await provider.request({
