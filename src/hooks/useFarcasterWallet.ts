@@ -40,8 +40,15 @@ export const useFarcasterWallet = () => {
           return;
         }
 
-        // Get user info
-        const user = await sdk.actions.getUser();
+        // Get user info from context
+        console.log("🔍 SDK context:", sdk.context);
+        const user = sdk.context.user;
+        if (!user) {
+          console.log("No user context available");
+          setIsLoading(false);
+          return;
+        }
+        console.log("👤 User context:", user);
         
         // Get the first account from the provider
         const accounts = await provider.request({ method: 'eth_accounts' });
@@ -89,8 +96,11 @@ export const useFarcasterWallet = () => {
         throw new Error("No accounts available");
       }
 
-      // Get user info
-      const user = await sdk.actions.getUser();
+      // Get user info from context
+      const user = sdk.context.user;
+      if (!user) {
+        throw new Error("No user context available");
+      }
       
       const farcasterWallet: FarcasterWallet = {
         address: accounts[0],
