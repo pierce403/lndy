@@ -32,10 +32,10 @@ export const useFarcasterWallet = () => {
           return;
         }
 
-        // Get the embedded wallet
-        const embeddedWallet = await sdk.actions.getEmbeddedWallet();
-        if (!embeddedWallet) {
-          console.log("No embedded wallet available");
+        // Get the Ethereum provider from Farcaster
+        const provider = await sdk.wallet.getEthereumProvider();
+        if (!provider) {
+          console.log("No Ethereum provider available");
           setIsLoading(false);
           return;
         }
@@ -43,8 +43,16 @@ export const useFarcasterWallet = () => {
         // Get user info
         const user = await sdk.actions.getUser();
         
+        // Get the first account from the provider
+        const accounts = await provider.request({ method: 'eth_accounts' });
+        if (!accounts || accounts.length === 0) {
+          console.log("No accounts available");
+          setIsLoading(false);
+          return;
+        }
+
         const farcasterWallet: FarcasterWallet = {
-          address: embeddedWallet.address,
+          address: accounts[0],
           fid: user.fid,
           username: user.username,
           displayName: user.displayName,
@@ -69,17 +77,23 @@ export const useFarcasterWallet = () => {
       setIsLoading(true);
       setError(null);
 
-      // Request embedded wallet if not already available
-      const embeddedWallet = await sdk.actions.getEmbeddedWallet();
-      if (!embeddedWallet) {
-        throw new Error("Embedded wallet not available");
+      // Get the Ethereum provider from Farcaster
+      const provider = await sdk.wallet.getEthereumProvider();
+      if (!provider) {
+        throw new Error("Ethereum provider not available");
+      }
+
+      // Request accounts from the provider
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts available");
       }
 
       // Get user info
       const user = await sdk.actions.getUser();
       
       const farcasterWallet: FarcasterWallet = {
-        address: embeddedWallet.address,
+        address: accounts[0],
         fid: user.fid,
         username: user.username,
         displayName: user.displayName,

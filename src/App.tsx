@@ -23,7 +23,7 @@ const AppShell = ({ client }: AppShellProps) => {
   const activeWallet = useActiveWallet();
   const { isConnecting } = useConnectModal();
   const isFarcasterPreferred = useIsFarcasterPreferred();
-  const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected } = useFarcasterWallet();
+  const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected, error: farcasterError } = useFarcasterWallet();
   const hasPromptedRef = useRef(false);
 
   const wallets = useMemo(
@@ -100,13 +100,28 @@ const AppShell = ({ client }: AppShellProps) => {
                   </div>
                 </div>
               ) : isFarcasterPreferred ? (
-                <button
-                  onClick={connectFarcaster}
-                  disabled={farcasterLoading}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-md transition-colors"
-                >
-                  {farcasterLoading ? "Connecting..." : "Connect Farcaster Wallet"}
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    onClick={() => {
+                      console.log("🔗 Connect Farcaster button clicked");
+                      connectFarcaster().catch(console.error);
+                    }}
+                    disabled={farcasterLoading}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-md transition-colors"
+                  >
+                    {farcasterLoading ? "Connecting..." : "Connect Farcaster Wallet"}
+                  </button>
+                  {farcasterLoading && (
+                    <p className="text-xs text-purple-600 dark:text-purple-300">
+                      Initializing Farcaster wallet...
+                    </p>
+                  )}
+                  {farcasterError && (
+                    <p className="text-xs text-red-600 dark:text-red-300">
+                      Error: {farcasterError}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <ConnectButton
                   client={client}
