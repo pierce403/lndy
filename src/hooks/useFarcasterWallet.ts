@@ -28,17 +28,16 @@ export const useFarcasterWallet = () => {
 
         // Check if we're in a Farcaster Mini App environment
         console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
-        let isInFarcaster;
-        try {
-          isInFarcaster = await sdk.actions.isInFarcaster();
-          console.log("🔧 useFarcasterWallet: isInFarcaster =", isInFarcaster, typeof isInFarcaster);
-        } catch (err) {
-          console.error("❌ Error checking isInFarcaster:", err);
-          setIsLoading(false);
-          return;
-        }
         
-        if (!isInFarcaster) {
+        // Check for Farcaster bridge in window object
+        const win = window as any;
+        const hasFarcasterBridge = Boolean(win.farcaster);
+        const hasMiniApp = Boolean(win.farcaster?.miniApp || win.FarcasterMiniApp);
+        
+        console.log("🔧 useFarcasterWallet: hasFarcasterBridge =", hasFarcasterBridge);
+        console.log("🔧 useFarcasterWallet: hasMiniApp =", hasMiniApp);
+        
+        if (!hasFarcasterBridge && !hasMiniApp) {
           console.log("Not in Farcaster environment, skipping embedded wallet");
           setIsLoading(false);
           return;

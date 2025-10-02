@@ -51,13 +51,26 @@ const AppShell = ({ client }: AppShellProps) => {
       console.log("🔧 App: Initializing Farcaster SDK");
       console.log("🔧 App: SDK object:", sdk);
       console.log("🔧 App: SDK actions:", sdk.actions);
+      console.log("🔧 App: SDK wallet:", sdk.wallet);
+      console.log("🔧 App: SDK context:", sdk.context);
+      console.log("🔧 App: Available SDK methods:", Object.keys(sdk));
+      if (sdk.actions) {
+        console.log("🔧 App: Available actions methods:", Object.keys(sdk.actions));
+      }
+      if (sdk.wallet) {
+        console.log("🔧 App: Available wallet methods:", Object.keys(sdk.wallet));
+      }
       
       // Signal to Farcaster that the app is ready to be displayed
-      sdk.actions.ready().then(() => {
-        console.log("✅ App: Farcaster SDK ready signal sent successfully");
-      }).catch((error) => {
-        console.error("❌ App: Failed to signal ready to Farcaster SDK:", error);
-      });
+      if (sdk.actions && typeof sdk.actions.ready === 'function') {
+        sdk.actions.ready().then(() => {
+          console.log("✅ App: Farcaster SDK ready signal sent successfully");
+        }).catch((error) => {
+          console.error("❌ App: Failed to signal ready to Farcaster SDK:", error);
+        });
+      } else {
+        console.log("⚠️ App: sdk.actions.ready not available, skipping ready signal");
+      }
     } catch (error) {
       console.error("❌ App: Error during SDK initialization:", error);
     }
