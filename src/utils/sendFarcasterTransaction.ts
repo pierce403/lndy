@@ -1,9 +1,19 @@
 import type { PreparedTransaction, WaitForReceiptOptions } from "thirdweb";
 import type { EIP1193Provider, Hex } from "viem";
 
-const toHex = (value: bigint | number | undefined): string | undefined => {
+export const toHex = (
+  value: bigint | number | Hex | undefined,
+): string | undefined => {
   if (value === undefined) {
     return undefined;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.startsWith("0x") || value.startsWith("0X")
+      ? value.slice(2)
+      : value;
+
+    return `0x${normalized}`;
   }
 
   const bigIntValue = typeof value === "number" ? BigInt(value) : value;
