@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
-
-type MiniAppWindow = Window & {
-  farcaster?: {
-    miniApp?: unknown;
-  };
-  FarcasterMiniApp?: unknown;
-};
+import type { EIP1193Provider } from "viem";
 
 interface FarcasterWallet {
   address: string;
@@ -25,6 +19,7 @@ export const useFarcasterWallet = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [provider, setProvider] = useState<EIP1193Provider | null>(null);
 
   useEffect(() => {
     const initializeWallet = async () => {
@@ -35,18 +30,21 @@ export const useFarcasterWallet = () => {
 
         // Check if we're in a Farcaster Mini App environment
         console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
-        
-        // Check for Farcaster bridge in window object
-        const win = window as MiniAppWindow;
-        const hasFarcasterBridge = Boolean(win.farcaster);
-        const hasMiniApp = Boolean(win.farcaster?.miniApp || win.FarcasterMiniApp);
-        
-        console.log("🔧 useFarcasterWallet: hasFarcasterBridge =", hasFarcasterBridge);
-        console.log("🔧 useFarcasterWallet: hasMiniApp =", hasMiniApp);
-        
-        if (!hasFarcasterBridge && !hasMiniApp) {
-          console.log("Not in Farcaster environment, skipping embedded wallet");
+
+        let isMiniApp = false;
+        try {
+          isMiniApp = await sdk.isInMiniApp();
+        } catch (err) {
+          console.warn("⚠️ useFarcasterWallet: sdk.isInMiniApp threw", err);
+        }
+
+        console.log("🔧 useFarcasterWallet: isMiniApp =", isMiniApp);
+
+        if (!isMiniApp) {
+          console.log("Not in Farcaster environment, disabling embedded wallet");
+          setIsDisabled(true);
           setIsLoading(false);
+          setProvider(null);
           return;
         }
 
@@ -58,15 +56,21 @@ export const useFarcasterWallet = () => {
           console.log("🔧 useFarcasterWallet: Provider =", provider, typeof provider);
         } catch (err) {
           console.error("❌ Error getting provider:", err);
+          setIsDisabled(true);
           setIsLoading(false);
+          setProvider(null);
           return;
         }
 
         if (!provider) {
           console.log("No Ethereum provider available");
+          setIsDisabled(true);
           setIsLoading(false);
+          setProvider(null);
           return;
         }
+
+        setProvider(provider as EIP1193Provider);
 
         // Get user info from context
         console.log("🔍 SDK context promise detected");
@@ -80,7 +84,7 @@ export const useFarcasterWallet = () => {
           setIsLoading(false);
           return;
         }
-        
+
         if (!user) {
           console.log("No user context available");
           setIsLoading(false);
@@ -103,7 +107,7 @@ export const useFarcasterWallet = () => {
           setIsLoading(false);
           return;
         }
-        
+
         if (!accounts || accounts.length === 0) {
           console.log("No accounts available");
           setIsLoading(false);
@@ -155,6 +159,8 @@ export const useFarcasterWallet = () => {
         throw new Error("Ethereum provider not available");
       }
 
+      setProvider(provider as EIP1193Provider);
+
       // Request accounts from the provider
       const accounts = await provider.request({ method: 'eth_requestAccounts', params: [] });
       if (!accounts || accounts.length === 0) {
@@ -189,6 +195,7 @@ export const useFarcasterWallet = () => {
   const disconnect = () => {
     setWallet(null);
     setError(null);
+    setProvider(null);
   };
 
   return {
@@ -199,5 +206,6 @@ export const useFarcasterWallet = () => {
     disconnect,
     isConnected: !!wallet,
     isDisabled,
+    provider,
   };
 };

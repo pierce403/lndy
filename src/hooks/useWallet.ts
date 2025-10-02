@@ -1,5 +1,5 @@
 import { useActiveWallet } from "thirdweb/react";
-import { useFarcasterWallet } from "./useFarcasterWallet";
+import { useFarcasterWalletContext } from "../context/FarcasterWalletContext";
 
 /**
  * Unified wallet hook that provides the active wallet from either
@@ -7,7 +7,10 @@ import { useFarcasterWallet } from "./useFarcasterWallet";
  */
 export const useWallet = () => {
   const activeWallet = useActiveWallet();
-  const { wallet: farcasterWallet, isConnected: isFarcasterConnected } = useFarcasterWallet();
+  const farcasterContext = useFarcasterWalletContext();
+  const farcasterWallet = farcasterContext?.wallet ?? null;
+  const isFarcasterConnected = farcasterContext?.isConnected ?? false;
+  const farcasterProvider = farcasterContext?.provider ?? null;
 
   // Prioritize Farcaster embedded wallet if available
   if (isFarcasterConnected && farcasterWallet) {
@@ -17,6 +20,7 @@ export const useWallet = () => {
       walletType: "farcaster" as const,
       farcaster: farcasterWallet,
       browser: null,
+      farcasterProvider,
     };
   }
 
@@ -28,6 +32,7 @@ export const useWallet = () => {
       walletType: "browser" as const,
       farcaster: null,
       browser: activeWallet,
+      farcasterProvider: null,
     };
   }
 
@@ -38,5 +43,6 @@ export const useWallet = () => {
     walletType: null,
     farcaster: null,
     browser: null,
+    farcasterProvider: null,
   };
 };
