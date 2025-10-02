@@ -56,12 +56,13 @@ const MyLoans = () => {
             duration: 0, // Not used in current implementation
             fundingDeadline: Number(details[3]),
             repaymentDate: Number(details[2]),
-            description: details[4],
-            imageURI: details[5],
-            borrower: details[6],
-            totalFunded: details[7],
-            isActive: details[10],
-            isRepaid: details[11],
+            title: details[4],
+            description: details[5],
+            imageURI: details[6],
+            borrower: details[7],
+            totalFunded: details[8],
+            isActive: details[11],
+            isRepaid: details[12],
           } as Loan;
         });
 

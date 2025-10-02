@@ -86,8 +86,8 @@ export const useInvestments = () => {
                   // Calculate claimable amount
                   const contributionInUSDC = Number(tokenValue) / 1e6;
                   const claimedInUSDC = Number(claimedAmount) / 1e6;
-                  const totalRepaidAmount = Number(loanDetails[8]) / 1e6;
-                  const actualRepaidAmount = Number(loanDetails[9]) / 1e6;
+                  const totalRepaidAmount = Number(loanDetails[9]) / 1e6;
+                  const actualRepaidAmount = Number(loanDetails[10]) / 1e6;
                   const loanAmount = Number(loanDetails[0]) / 1e6;
                   
                   // Calculate how much this token has earned so far
@@ -100,11 +100,11 @@ export const useInvestments = () => {
                     contributionAmount: contributionInUSDC,
                     claimedAmount: claimedInUSDC,
                     claimableAmount: claimableAmount,
-                    loanDescription: loanDetails[4], // description
-                    loanImageURI: loanDetails[5], // imageURI
-                    borrower: loanDetails[6], // borrower
-                    isLoanActive: loanDetails[10], // isActive
-                    isLoanRepaid: loanDetails[11], // isFullyRepaid
+                    loanDescription: loanDetails[5], // description
+                    loanImageURI: loanDetails[6], // imageURI
+                    borrower: loanDetails[7], // borrower
+                    isLoanActive: loanDetails[11], // isActive
+                    isLoanRepaid: loanDetails[12], // isFullyRepaid
                     totalRepaidAmount: totalRepaidAmount,
                     actualRepaidAmount: actualRepaidAmount,
                   };
