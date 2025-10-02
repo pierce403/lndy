@@ -47,16 +47,20 @@ const AppShell = ({ client }: AppShellProps) => {
 
   // Initialize Farcaster Mini App SDK
   useEffect(() => {
-    console.log("🔧 App: Initializing Farcaster SDK");
-    console.log("🔧 App: SDK object:", sdk);
-    console.log("🔧 App: SDK actions:", sdk.actions);
-    
-    // Signal to Farcaster that the app is ready to be displayed
-    sdk.actions.ready().then(() => {
-      console.log("✅ App: Farcaster SDK ready signal sent successfully");
-    }).catch((error) => {
-      console.error("❌ App: Failed to signal ready to Farcaster SDK:", error);
-    });
+    try {
+      console.log("🔧 App: Initializing Farcaster SDK");
+      console.log("🔧 App: SDK object:", sdk);
+      console.log("🔧 App: SDK actions:", sdk.actions);
+      
+      // Signal to Farcaster that the app is ready to be displayed
+      sdk.actions.ready().then(() => {
+        console.log("✅ App: Farcaster SDK ready signal sent successfully");
+      }).catch((error) => {
+        console.error("❌ App: Failed to signal ready to Farcaster SDK:", error);
+      });
+    } catch (error) {
+      console.error("❌ App: Error during SDK initialization:", error);
+    }
   }, []);
 
   // Auto-connect Farcaster embedded wallet if in Farcaster environment

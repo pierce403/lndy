@@ -53,6 +53,10 @@ export const useFarcasterWallet = () => {
           return;
         }
         console.log("👤 User context:", user);
+        console.log("👤 User fid:", user.fid, typeof user.fid);
+        console.log("👤 User username:", user.username, typeof user.username);
+        console.log("👤 User displayName:", user.displayName, typeof user.displayName);
+        console.log("👤 User pfpUrl:", user.pfpUrl, typeof user.pfpUrl);
         
         // Get the first account from the provider
         const accounts = await provider.request({ method: 'eth_accounts' });
@@ -64,10 +68,10 @@ export const useFarcasterWallet = () => {
 
         const farcasterWallet: FarcasterWallet = {
           address: accounts[0],
-          fid: user.fid,
-          username: user.username,
-          displayName: user.displayName,
-          pfpUrl: user.pfpUrl,
+          fid: typeof user.fid === 'number' ? user.fid : parseInt(String(user.fid || 0)),
+          username: typeof user.username === 'string' ? user.username : String(user.username || ''),
+          displayName: typeof user.displayName === 'string' ? user.displayName : String(user.displayName || ''),
+          pfpUrl: typeof user.pfpUrl === 'string' ? user.pfpUrl : String(user.pfpUrl || ''),
         };
 
         console.log("✅ Farcaster embedded wallet connected:", farcasterWallet);
@@ -108,10 +112,10 @@ export const useFarcasterWallet = () => {
       
       const farcasterWallet: FarcasterWallet = {
         address: accounts[0],
-        fid: user.fid,
-        username: user.username,
-        displayName: user.displayName,
-        pfpUrl: user.pfpUrl,
+        fid: typeof user.fid === 'number' ? user.fid : parseInt(String(user.fid || 0)),
+        username: typeof user.username === 'string' ? user.username : String(user.username || ''),
+        displayName: typeof user.displayName === 'string' ? user.displayName : String(user.displayName || ''),
+        pfpUrl: typeof user.pfpUrl === 'string' ? user.pfpUrl : String(user.pfpUrl || ''),
       };
 
       setWallet(farcasterWallet);
