@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { useActiveAccount } from "thirdweb/react";
+import { useWallet } from "./useWallet";
 import { readContract } from "thirdweb";
 import { Investment } from "../types/types";
 import { getLauncherContract, getLoanContract } from "../lib/client";
 
 export const useInvestments = () => {
-  const account = useActiveAccount();
-  const address = account?.address;
+  const { address } = useWallet();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 

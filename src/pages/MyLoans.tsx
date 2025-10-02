@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { useActiveAccount } from "thirdweb/react";
+import { useWallet } from "../hooks/useWallet";
 import { readContract } from "thirdweb";
 import { getLauncherContract, getLoanContract } from "../lib/client";
 import { Loan } from "../types/types";
 import LoanCard from "../components/LoanCard";
 
 const MyLoans = () => {
-  const account = useActiveAccount();
-  const address = account?.address;
+  const { address } = useWallet();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 

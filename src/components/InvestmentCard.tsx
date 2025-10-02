@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { useSendTransaction } from "thirdweb/react";
+import { useWallet } from "../hooks/useWallet";
 import { prepareContractCall } from "thirdweb";
 import { getLoanContract } from "../lib/client";
 import { Investment } from "../types/types";
@@ -12,8 +13,7 @@ interface InvestmentCardProps {
 }
 
 const InvestmentCard = ({ investment, onClaimSuccess }: InvestmentCardProps) => {
-  const account = useActiveAccount();
-  const address = account?.address;
+  const { address } = useWallet();
   const { mutate: sendTransaction, isPending } = useSendTransaction();
   const [showClaimSuccessModal, setShowClaimSuccessModal] = useState<boolean>(false);
   const [claimSuccessDetails, setClaimSuccessDetails] = useState<{

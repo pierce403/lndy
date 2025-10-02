@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { useSendTransaction } from "thirdweb/react";
+import { useWallet } from "../hooks/useWallet";
 import { prepareContractCall, getContract, readContract } from "thirdweb";
 import { getLoanContract } from "../lib/client";
 import { client } from "../lib/client";
@@ -15,8 +16,7 @@ interface FundingModalProps {
 }
 
 const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) => {
-  const account = useActiveAccount();
-  const address = account?.address;
+  const { address } = useWallet();
   const { mutate: sendTransaction, isPending } = useSendTransaction();
   
   const [fundingAmount, setFundingAmount] = useState<number>(10);

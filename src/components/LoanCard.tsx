@@ -1,4 +1,4 @@
-import { useActiveAccount } from "thirdweb/react";
+import { useWallet } from "../hooks/useWallet";
 import { Loan } from "../types/types";
 import { useState, useEffect } from "react";
 import { readContract } from "thirdweb";
@@ -14,8 +14,7 @@ interface LoanCardProps {
 }
 
 const LoanCard = ({ loan }: LoanCardProps) => {
-  const account = useActiveAccount();
-  const address = account?.address;
+  const { address } = useWallet();
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [showFundingModal, setShowFundingModal] = useState<boolean>(false);
   const [showRepaymentModal, setShowRepaymentModal] = useState<boolean>(false);

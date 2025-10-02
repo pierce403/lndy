@@ -12,6 +12,7 @@ import Dashboard from "./components/Dashboard";
 import MyLoans from "./pages/MyLoans";
 import About from "./components/About";
 import { useIsFarcasterPreferred } from "./hooks/useIsFarcasterPreferred";
+import { useFarcasterWallet } from "./hooks/useFarcasterWallet";
 
 type AppShellProps = {
   client: ThirdwebClient;
@@ -20,8 +21,9 @@ type AppShellProps = {
 const AppShell = ({ client }: AppShellProps) => {
   const [activeTab, setActiveTab] = useState<"browse" | "create" | "myloans" | "dashboard" | "about">("browse");
   const activeWallet = useActiveWallet();
-  const { connect, isConnecting } = useConnectModal();
+  const { isConnecting } = useConnectModal();
   const isFarcasterPreferred = useIsFarcasterPreferred();
+  const { wallet: farcasterWallet, isLoading: farcasterLoading, connect: connectFarcaster, isConnected: isFarcasterConnected } = useFarcasterWallet();
   const hasPromptedRef = useRef(false);
 
   const wallets = useMemo(
@@ -50,36 +52,23 @@ const AppShell = ({ client }: AppShellProps) => {
     });
   }, []);
 
-  // Auto-connect Farcaster wallet if preferred
+  // Auto-connect Farcaster embedded wallet if in Farcaster environment
   useEffect(() => {
-    if (!isFarcasterPreferred || activeWallet || isConnecting || hasPromptedRef.current) {
+    if (!isFarcasterPreferred || isFarcasterConnected || farcasterLoading || hasPromptedRef.current) {
       return;
     }
 
     hasPromptedRef.current = true;
 
-    void connect({
-      client,
-      chain: base,
-      wallets,
-      size: "compact",
-      title: "Sign in to LNDY",
-      titleIcon: "/lndy-favicon.svg",
-      showThirdwebBranding: false,
-      welcomeScreen: {
-        title: "Log in with Farcaster",
-        subtitle: "Use your Farcaster identity to access the LNDY MiniApp.",
-      },
-    }).catch((error) => {
-      console.debug("Farcaster auto-connect dismissed", error);
+    // Try to connect Farcaster embedded wallet first
+    void connectFarcaster().catch((error) => {
+      console.debug("Farcaster embedded wallet not available, falling back to Thirdweb:", error);
     });
   }, [
     isFarcasterPreferred,
-    activeWallet,
-    isConnecting,
-    connect,
-    client,
-    wallets,
+    isFarcasterConnected,
+    farcasterLoading,
+    connectFarcaster,
   ]);
 
   return (
@@ -92,28 +81,51 @@ const AppShell = ({ client }: AppShellProps) => {
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Social lending powered by Ethereum</p>
             </div>
             <div className="flex flex-col items-stretch sm:items-end gap-2">
-              <ConnectButton
-                client={client}
-                chain={base}
-                wallets={wallets}
-                connectButton={{
-                  label:
-                    activeWallet || isConnecting
-                      ? undefined
-                      : isFarcasterPreferred
-                        ? "Sign in with Farcaster"
-                        : "Connect Wallet",
-                }}
-                connectModal={{
-                  size: "compact",
-                  title: "Sign in to LNDY",
-                  titleIcon: "/lndy-favicon.svg",
-                  showThirdwebBranding: false,
-                }}
-              />
-              {isFarcasterPreferred && !activeWallet && (
-                <p className="text-xs text-indigo-600 dark:text-indigo-300 text-right">
-                  Tip: you can authenticate instantly with your Farcaster account.
+              {isFarcasterConnected ? (
+                <div className="flex items-center space-x-3">
+                  {farcasterWallet?.pfpUrl && (
+                    <img 
+                      src={farcasterWallet.pfpUrl} 
+                      alt={farcasterWallet.displayName || farcasterWallet.username}
+                      className="w-8 h-8 rounded-full"
+                    />
+                  )}
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {farcasterWallet?.displayName || farcasterWallet?.username || "Farcaster User"}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {farcasterWallet?.address?.substring(0, 6)}...{farcasterWallet?.address?.substring(38)}
+                    </div>
+                  </div>
+                </div>
+              ) : isFarcasterPreferred ? (
+                <button
+                  onClick={connectFarcaster}
+                  disabled={farcasterLoading}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-md transition-colors"
+                >
+                  {farcasterLoading ? "Connecting..." : "Connect Farcaster Wallet"}
+                </button>
+              ) : (
+                <ConnectButton
+                  client={client}
+                  chain={base}
+                  wallets={wallets}
+                  connectButton={{
+                    label: activeWallet || isConnecting ? undefined : "Connect Wallet",
+                  }}
+                  connectModal={{
+                    size: "compact",
+                    title: "Sign in to LNDY",
+                    titleIcon: "/lndy-favicon.svg",
+                    showThirdwebBranding: false,
+                  }}
+                />
+              )}
+              {isFarcasterPreferred && !isFarcasterConnected && !farcasterLoading && (
+                <p className="text-xs text-purple-600 dark:text-purple-300 text-right">
+                  Use your Farcaster embedded wallet for seamless access
                 </p>
               )}
             </div>

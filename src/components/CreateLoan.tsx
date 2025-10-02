@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { useSendTransaction } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
 import { upload } from "thirdweb/storage";
 import { getLauncherContract } from "../lib/client";
 import { client } from "../lib/client";
+import { useWallet } from "../hooks/useWallet";
 import Modal from "./Modal";
 
 const CreateLoan = () => {
-  const account = useActiveAccount();
-  const address = account?.address;
+  const { address } = useWallet();
   const [loanAmount, setLoanAmount] = useState<string>("100");
   const [interestRate, setInterestRate] = useState<string>("1000"); // 10% in basis points
   const [duration, setDuration] = useState<string>("2592000"); // 30 days in seconds
