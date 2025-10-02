@@ -175,7 +175,7 @@ const LoanCard = ({ loan }: LoanCardProps) => {
       <div className="p-5">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{loan.description}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{loan.title || loan.description}</h3>
             {/* Farcaster Profile Display */}
             {isLoadingProfile ? (
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">

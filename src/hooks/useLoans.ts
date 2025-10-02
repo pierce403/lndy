@@ -108,12 +108,13 @@ export const useLoans = () => {
               duration: Number(loanDetails[2] - loanDetails[3]), // targetRepaymentDate - fundingDeadline = duration
               fundingDeadline: Number(loanDetails[3]),
               repaymentDate: Number(loanDetails[2]), // targetRepaymentDate
-              description: loanDetails[4],
-              imageURI: loanDetails[5],
-              borrower: loanDetails[6],
-              totalFunded: loanDetails[7],
-              isActive: loanDetails[10],
-              isRepaid: loanDetails[11]
+              title: loanDetails[4],
+              description: loanDetails[5],
+              imageURI: loanDetails[6],
+              borrower: loanDetails[7],
+              totalFunded: loanDetails[8],
+              isActive: loanDetails[11],
+              isRepaid: loanDetails[12]
             };
             
             console.log(`✅ useLoans: [${index + 1}] Processed loan data for ${loanAddress}:`, processedLoan);

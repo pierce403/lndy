@@ -5,6 +5,7 @@ export interface Loan {
   duration: number;
   fundingDeadline: number;
   repaymentDate: number;
+  title?: string;
   description: string;
   imageURI: string;
   borrower: string;
