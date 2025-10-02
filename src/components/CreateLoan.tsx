@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useSendTransaction } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
 import { upload } from "thirdweb/storage";
 import { getLauncherContract } from "../lib/client";
 import { client } from "../lib/client";
 import { useWallet } from "../hooks/useWallet";
+import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 import Modal from "./Modal";
 
 const CreateLoan = () => {
@@ -26,7 +26,7 @@ const CreateLoan = () => {
     targetRepaymentDate: string;
   } | null>(null);
 
-  const { mutate: sendTransaction } = useSendTransaction();
+  const { executeTransaction } = useTransactionExecutor();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -209,7 +209,7 @@ const CreateLoan = () => {
       });
       
       console.log("🚀 CreateLoan: Sending transaction...");
-      sendTransaction(transaction, {
+      executeTransaction(transaction, {
         onSuccess: (result) => {
           console.log("🎉 CreateLoan: Transaction successful!");
           console.log("✅ CreateLoan: Transaction result:", result);

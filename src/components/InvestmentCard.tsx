@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useSendTransaction } from "thirdweb/react";
 import { useWallet } from "../hooks/useWallet";
 import { prepareContractCall } from "thirdweb";
 import { getLoanContract } from "../lib/client";
 import { Investment } from "../types/types";
 import Modal from "./Modal";
 import IpfsImage from "./IpfsImage";
+import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 
 interface InvestmentCardProps {
   investment: Investment;
@@ -14,7 +14,7 @@ interface InvestmentCardProps {
 
 const InvestmentCard = ({ investment, onClaimSuccess }: InvestmentCardProps) => {
   const { address } = useWallet();
-  const { mutate: sendTransaction, isPending } = useSendTransaction();
+  const { executeTransaction, isPending } = useTransactionExecutor();
   const [showClaimSuccessModal, setShowClaimSuccessModal] = useState<boolean>(false);
   const [claimSuccessDetails, setClaimSuccessDetails] = useState<{
     transactionHash: string;
@@ -60,7 +60,7 @@ const InvestmentCard = ({ investment, onClaimSuccess }: InvestmentCardProps) => 
       
       console.log("📤 InvestmentCard: Claiming for token ID:", investment.tokenId);
       
-      sendTransaction(transaction, {
+      executeTransaction(transaction, {
         onSuccess: (result) => {
           console.log("🎉 InvestmentCard: Claim successful:", result.transactionHash);
           setClaimSuccessDetails({

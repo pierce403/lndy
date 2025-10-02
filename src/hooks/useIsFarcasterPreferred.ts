@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
 
 type FarcasterWindow = Window & {
   farcaster?: {
@@ -32,7 +33,25 @@ export const useIsFarcasterPreferred = () => {
       userAgent.includes(hint),
     );
 
-    setIsPreferred(hasBridge || isMiniApp || fromQuery || agentHints);
+    const immediatePreference = hasBridge || isMiniApp || fromQuery || agentHints;
+    setIsPreferred(immediatePreference);
+
+    let isMounted = true;
+
+    sdk
+      .isInMiniApp()
+      .then((result) => {
+        if (isMounted && result) {
+          setIsPreferred(true);
+        }
+      })
+      .catch((error) => {
+        console.debug("useIsFarcasterPreferred: sdk.isInMiniApp error", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return isPreferred;
