@@ -9,6 +9,11 @@ lib/
 # Environment variables
 .env
 
+# Deployment private keys
+.deployer
+.deployer.mnemonic
+deployment.json
+
 # IDE and editor files
 .vscode/
 .idea/

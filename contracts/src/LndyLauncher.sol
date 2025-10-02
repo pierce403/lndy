@@ -26,7 +26,8 @@ contract LndyLauncher is Ownable {
      * @param _thankYouAmount Thank you amount in basis points (e.g., 1000 = 10%)
      * @param _targetRepaymentDate When borrower plans to repay (timestamp)
      * @param _fundingPeriod Period in seconds during which the loan can be funded
-     * @param _description Description of the loan purpose
+     * @param _title Short title for the loan (max 20 characters)
+     * @param _description Description of the loan purpose (max 200 characters)
      * @param _baseImageURI Base IPFS URI for the loan NFT images
      */
     function createLoan(
@@ -34,6 +35,7 @@ contract LndyLauncher is Ownable {
         uint256 _thankYouAmount,
         uint256 _targetRepaymentDate,
         uint256 _fundingPeriod,
+        string memory _title,
         string memory _description,
         string memory _baseImageURI
     ) external returns (address) {
@@ -41,7 +43,11 @@ contract LndyLauncher is Ownable {
         require(_loanAmount > 0, "Loan amount must be greater than 0");
         require(_targetRepaymentDate > block.timestamp, "Target repayment date must be in the future");
         require(_fundingPeriod > 0, "Funding period must be greater than 0");
-        require(bytes(_description).length > 0, "Description cannot be empty");
+        require(bytes(_title).length > 0 && bytes(_title).length <= 20, "Title must be 1-20 characters");
+        require(bytes(_description).length > 0 && bytes(_description).length <= 200, "Description must be 1-200 characters");
+        
+        // Get the loan index (current length before adding)
+        uint256 loanIndex = loans.length;
         
         // Create a new LndyLoan contract
         LndyLoan newLoan = new LndyLoan(
@@ -49,9 +55,11 @@ contract LndyLauncher is Ownable {
             _thankYouAmount,
             _targetRepaymentDate,
             _fundingPeriod,
+            _title,
             _description,
             _baseImageURI,
-            msg.sender
+            msg.sender,
+            loanIndex
         );
         
         address loanAddress = address(newLoan);

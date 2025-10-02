@@ -43,6 +43,7 @@ contract LndyLoanTest is Test {
             THANK_YOU_AMOUNT,
             TARGET_REPAYMENT_DATE,
             FUNDING_PERIOD,
+            "Test Loan",
             DESCRIPTION,
             BASE_IMAGE_URI,
             borrower,
@@ -64,6 +65,7 @@ contract LndyLoanTest is Test {
             uint256 _thankYouAmount,
             uint256 _targetRepaymentDate,
             uint256 _fundingDeadline,
+            string memory _title,
             string memory _description,
             string memory _baseImageURI,
             address _borrower,
@@ -103,7 +105,7 @@ contract LndyLoanTest is Test {
         vm.stopPrank();
         
         // Check loan is now active
-        (, , , , , , , , , , bool isActive, ) = loan.getLoanDetails();
+        (, , , , , , , , , , , bool isActive, ) = loan.getLoanDetails();
         assertTrue(isActive);
         
         // Check supporter received NFT
@@ -136,7 +138,7 @@ contract LndyLoanTest is Test {
         assertEq(loan.balanceOf(supporter3, 3), 1);
         
         // Check loan is active
-        (, , , , , , , , , , bool isActive, ) = loan.getLoanDetails();
+        (, , , , , , , , , , , bool isActive, ) = loan.getLoanDetails();
         assertTrue(isActive);
     }
     
@@ -182,7 +184,7 @@ contract LndyLoanTest is Test {
         vm.stopPrank();
         
         // Check loan is fully repaid
-        (, , , , , , , , , , , bool isFullyRepaid) = loan.getLoanDetails();
+        (, , , , , , , , , , , , bool isFullyRepaid) = loan.getLoanDetails();
         assertTrue(isFullyRepaid);
         
         // All supporters can claim their full returns
@@ -278,7 +280,7 @@ contract LndyLoanTest is Test {
         
         // Should contain JSON metadata (not base64 encoded anymore)
         assertTrue(_contains(tokenURI, "data:application/json,"));
-        assertTrue(_contains(tokenURI, "LNDY Support Token #1"));
+        assertTrue(_contains(tokenURI, "Test Loan - Support Token #1"));
         assertTrue(_contains(tokenURI, "Contribution Amount"));
         assertTrue(_contains(tokenURI, "Status"));
     }
@@ -407,6 +409,7 @@ contract TestableLndyLoan is LndyLoan {
         uint256 _thankYouAmount,
         uint256 _targetRepaymentDate,
         uint256 _fundingPeriod,
+        string memory _title,
         string memory _description,
         string memory _baseImageURI,
         address _borrower,
@@ -416,9 +419,11 @@ contract TestableLndyLoan is LndyLoan {
         _thankYouAmount,
         _targetRepaymentDate,
         _fundingPeriod,
+        _title,
         _description,
         _baseImageURI,
-        _borrower
+        _borrower,
+        0  // loanIndex for tests
     ) {
         testUSDC = IERC20(_testUSDC);
     }

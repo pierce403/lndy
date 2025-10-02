@@ -34,6 +34,7 @@ contract LndyLauncherTest is Test {
             THANK_YOU_AMOUNT,
             TARGET_REPAYMENT_DATE,
             FUNDING_PERIOD,
+            "Test Loan",
             DESCRIPTION,
             BASE_IMAGE_URI
         );
@@ -50,6 +51,7 @@ contract LndyLauncherTest is Test {
             uint256 _thankYouAmount,
             uint256 _targetRepaymentDate,
             ,
+            string memory _title,
             string memory _description,
             string memory _baseImageURI,
             address _borrower,
@@ -59,6 +61,7 @@ contract LndyLauncherTest is Test {
         assertEq(_loanAmount, LOAN_AMOUNT);
         assertEq(_thankYouAmount, THANK_YOU_AMOUNT);
         assertEq(_targetRepaymentDate, TARGET_REPAYMENT_DATE);
+        assertEq(_title, "Test Loan");
         assertEq(_description, DESCRIPTION);
         assertEq(_baseImageURI, BASE_IMAGE_URI);
         assertEq(_borrower, borrower1);
@@ -73,6 +76,7 @@ contract LndyLauncherTest is Test {
             TARGET_REPAYMENT_DATE,
             FUNDING_PERIOD,
             "First loan",
+            DESCRIPTION,
             BASE_IMAGE_URI
         );
         
@@ -82,6 +86,7 @@ contract LndyLauncherTest is Test {
             TARGET_REPAYMENT_DATE + 5 days,
             FUNDING_PERIOD,
             "Second loan",
+            DESCRIPTION,
             BASE_IMAGE_URI
         );
         vm.stopPrank();
@@ -111,6 +116,7 @@ contract LndyLauncherTest is Test {
             TARGET_REPAYMENT_DATE,
             FUNDING_PERIOD,
             "Loan 1",
+            DESCRIPTION,
             BASE_IMAGE_URI
         );
         vm.stopPrank();
@@ -122,6 +128,7 @@ contract LndyLauncherTest is Test {
             TARGET_REPAYMENT_DATE,
             FUNDING_PERIOD,
             "Loan 2",
+            DESCRIPTION,
             BASE_IMAGE_URI
         );
         vm.stopPrank();
@@ -142,6 +149,7 @@ contract LndyLauncherTest is Test {
             THANK_YOU_AMOUNT,
             TARGET_REPAYMENT_DATE,
             FUNDING_PERIOD,
+            "Invalid Loan",
             DESCRIPTION,
             BASE_IMAGE_URI
         );

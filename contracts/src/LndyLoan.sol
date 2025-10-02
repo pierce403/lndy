@@ -24,9 +24,15 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
     uint256 public thankYouAmount; // Additional amount to show appreciation in basis points
     uint256 public targetRepaymentDate; // When borrower plans to repay
     uint256 public fundingDeadline; // Deadline for funding
-    string public description;
+    string public title; // Short title for the loan (max 20 characters)
+    string public description; // Description of the loan purpose (max 200 characters)
     string public baseImageURI; // Base IPFS URI for the loan NFT images
     address public borrower;
+    uint256 public loanIndex; // Index of this loan in the LndyLauncher
+    
+    // Collection metadata for OpenSea
+    string public name; // ERC-1155 collection name
+    string public symbol; // ERC-1155 symbol
     
     // Loan state
     uint256 public totalFunded; // Total USDC funded
@@ -55,26 +61,36 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
      * @param _thankYouAmount Thank you amount in basis points (e.g., 1000 = 10%)
      * @param _targetRepaymentDate When borrower plans to repay
      * @param _fundingPeriod Period in seconds during which the loan can be funded
-     * @param _description Description of the loan purpose
+     * @param _title Short title for the loan (max 20 characters)
+     * @param _description Description of the loan purpose (max 200 characters)
      * @param _baseImageURI Base IPFS URI for the loan NFT images
      * @param _borrower Address of the borrower
+     * @param _loanIndex Index of this loan in the LndyLauncher
      */
     constructor(
         uint256 _loanAmount,
         uint256 _thankYouAmount,
         uint256 _targetRepaymentDate,
         uint256 _fundingPeriod,
+        string memory _title,
         string memory _description,
         string memory _baseImageURI,
-        address _borrower
+        address _borrower,
+        uint256 _loanIndex
     ) ERC1155("") Ownable(_borrower) {
         loanAmount = _loanAmount;
         thankYouAmount = _thankYouAmount;
         targetRepaymentDate = _targetRepaymentDate;
         fundingDeadline = block.timestamp + _fundingPeriod;
+        title = _title;
         description = _description;
         baseImageURI = _baseImageURI;
         borrower = _borrower;
+        loanIndex = _loanIndex;
+        
+        // Set collection name and symbol for OpenSea
+        name = string(abi.encodePacked(_title, " - LNDY #", _loanIndex.toString()));
+        symbol = "LNDY";
         
         // Calculate total repayment amount (principal + thank you)
         totalRepaidAmount = _loanAmount + (_loanAmount * _thankYouAmount) / 10000;
@@ -105,13 +121,26 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
             tokenStatus = "Active";
         }
         
-        // Return simplified JSON metadata
+        // Return simplified JSON metadata with new naming format
         return string(abi.encodePacked(
-            'data:application/json,{"name":"LNDY Support Token #', tokenId.toString(),
+            'data:application/json,{"name":"', title, ' - Support Token #', tokenId.toString(),
             '","description":"', description, 
             '","image":"', baseImageURI,
             '","attributes":[{"trait_type":"Contribution Amount","value":"', (value / 1e6).toString(),
             '"},{"trait_type":"Status","value":"', tokenStatus, '"}]}'
+        ));
+    }
+    
+    /**
+     * @dev Returns contract-level metadata for OpenSea collection
+     * @return The collection metadata JSON URI
+     */
+    function contractURI() public view returns (string memory) {
+        return string(abi.encodePacked(
+            'data:application/json,{"name":"', name,
+            '","description":"', description,
+            '","image":"', baseImageURI,
+            '","external_link":"https://lndy.app"}'
         ));
     }
     
@@ -235,6 +264,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
         uint256 _thankYouAmount,
         uint256 _targetRepaymentDate,
         uint256 _fundingDeadline,
+        string memory _title,
         string memory _description,
         string memory _baseImageURI,
         address _borrower,
@@ -249,6 +279,7 @@ contract LndyLoan is ERC1155, Ownable, ReentrancyGuard {
             thankYouAmount,
             targetRepaymentDate,
             fundingDeadline,
+            title,
             description,
             baseImageURI,
             borrower,
