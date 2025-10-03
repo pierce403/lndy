@@ -22,10 +22,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // Note: We're not using Neynar API for notifications anymore
-    // Browser notifications are handled client-side
+    const neynarApiKey = process.env.NEYNAR_API_KEY;
+    if (!neynarApiKey) {
+      console.error('❌ NEYNAR_API_KEY not found in environment variables');
+      return res.status(500).json({ 
+        error: 'Neynar API key not configured' 
+      });
+    }
 
-    console.log('🔔 Sending notification via Neynar:', {
+    console.log('🔔 Sending Farcaster notification via Neynar:', {
       type,
       title,
       message,
@@ -37,27 +42,88 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
 
-    // Log notification for debugging and analytics
-    console.log('📊 Notification logged:', {
-      type,
-      title,
-      message,
-      loanId,
-      amount,
-      contributorAddress,
-      borrowerAddress,
-      targetFids,
-      timestamp: new Date().toISOString()
-    });
+    // Send notification via Neynar API
+    let notificationResponse;
+    try {
+      if (targetFids && targetFids.length > 0) {
+        // Filter to only users who have enabled notifications
+        const { kv } = await import('@vercel/kv');
+        const enabledUsers = await kv.smembers('notifications_enabled_users');
+        const enabledFids = enabledUsers.map(fid => parseInt(fid)).filter(fid => !isNaN(fid));
+        
+        const validTargetFids = targetFids.filter(fid => enabledFids.includes(fid));
+        
+        if (validTargetFids.length === 0) {
+          console.log('⚠️ No users with enabled notifications found');
+          notificationResponse = {
+            success: true,
+            sentCount: 0,
+            totalTargets: targetFids.length,
+            message: 'No users with enabled notifications'
+          };
+        } else {
+          // Send notification via Neynar API
+          const notificationData = {
+            targetFids: validTargetFids,
+            notification: {
+              title: title,
+              body: message,
+              target_url: `https://lndy.org/loan/${loanId}`,
+              metadata: {
+                loanId,
+                amount,
+                contributorAddress,
+                borrowerAddress,
+                type
+              }
+            }
+          };
 
-    // For now, we're using browser notifications as the primary method
-    // Server-side notifications can be added when Farcaster releases official APIs
-    const notificationResponse = {
-      success: true,
-      sentCount: targetFids ? targetFids.length : 0,
-      totalTargets: targetFids ? targetFids.length : 0,
-      message: 'Notification logged successfully (browser notifications handled client-side)'
-    };
+          const neynarResponse = await fetch('https://api.neynar.com/v2/farcaster/notifications', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': neynarApiKey,
+            },
+            body: JSON.stringify(notificationData)
+          });
+
+          if (!neynarResponse.ok) {
+            const errorText = await neynarResponse.text();
+            console.error('❌ Neynar API error:', errorText);
+            throw new Error(`Neynar API error: ${neynarResponse.status} ${errorText}`);
+          }
+
+          const neynarResult = await neynarResponse.json();
+          console.log('✅ Neynar notification sent successfully:', neynarResult);
+          
+          notificationResponse = {
+            success: true,
+            sentCount: validTargetFids.length,
+            totalTargets: targetFids.length,
+            enabledUsers: validTargetFids.length,
+            neynarResult
+          };
+        }
+      } else {
+        console.log('⚠️ No target FIDs provided, skipping notification');
+        notificationResponse = {
+          success: true,
+          sentCount: 0,
+          totalTargets: 0,
+          message: 'No target FIDs provided'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error sending notification via Neynar:', error);
+      // Don't throw - log the error but don't break the flow
+      notificationResponse = {
+        success: false,
+        error: error.message,
+        sentCount: 0,
+        totalTargets: targetFids ? targetFids.length : 0
+      };
+    }
 
     return res.status(200).json({ 
       success: true, 

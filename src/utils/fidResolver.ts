@@ -39,24 +39,24 @@ export const resolveFidsFromAddresses = async (addresses: string[]): Promise<num
 };
 
 /**
- * Get all subscribed user FIDs from Vercel KV
+ * Get all users with notifications enabled from Vercel KV
  */
 export const getAllSubscribedUserFids = async (): Promise<number[]> => {
   try {
-    console.log("📋 FidResolver: Getting all subscribed user FIDs from Vercel KV");
+    console.log("📋 FidResolver: Getting all users with notifications enabled");
     
-    // Call our API endpoint to get subscribed users
-    const response = await fetch('/api/notifications/subscribers');
+    // Call our API endpoint to get users with notifications enabled
+    const response = await fetch('/api/notifications/enabled-users');
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log("✅ FidResolver: Retrieved subscribed FIDs:", data.fids);
+    console.log("✅ FidResolver: Retrieved users with notifications enabled:", data.fids);
     return data.fids || [];
   } catch (error) {
-    console.error("❌ FidResolver: Error getting subscribed users:", error);
+    console.error("❌ FidResolver: Error getting users with notifications enabled:", error);
     return [];
   }
 };
