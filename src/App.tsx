@@ -15,6 +15,7 @@ import MyLoans from "./pages/MyLoans";
 import About from "./components/About";
 import ErrorBoundary from "./components/ErrorBoundary";
 import NotificationSetup from "./components/NotificationSetup";
+import NeynarProvider from "./components/NeynarProvider";
 import { useIsFarcasterPreferred } from "./hooks/useIsFarcasterPreferred";
 import { FarcasterWalletProvider, useFarcasterWalletContext } from "./context/FarcasterWalletContext";
 
@@ -50,18 +51,24 @@ const AppShell = ({ client }: AppShellProps) => {
   useEffect(() => {
     try {
       console.log("🔧 App: Initializing Farcaster SDK");
-      console.log("🔧 App: SDK object:", sdk);
-      console.log("🔧 App: SDK actions:", sdk.actions);
-      console.log("🔧 App: SDK wallet:", sdk.wallet);
-      console.log("🔧 App: SDK context:", sdk.context);
-      console.log("🔧 App: Available SDK methods:", Object.keys(sdk));
+
+      // Defensive check for SDK availability
+      if (!sdk) {
+        console.error("❌ App: Farcaster SDK not available");
+        return;
+      }
+
+      console.log("🔧 App: SDK object:", typeof sdk);
+
+      // Check if actions exist before accessing
       if (sdk.actions) {
         console.log("🔧 App: Available actions methods:", Object.keys(sdk.actions));
       }
+
       if (sdk.wallet) {
         console.log("🔧 App: Available wallet methods:", Object.keys(sdk.wallet));
       }
-      
+
       // Signal to Farcaster that the app is ready to be displayed
       if (sdk.actions && typeof sdk.actions.ready === 'function') {
         sdk.actions.ready().then(() => {
@@ -74,6 +81,7 @@ const AppShell = ({ client }: AppShellProps) => {
       }
     } catch (error) {
       console.error("❌ App: Error during SDK initialization:", error);
+      // Don't throw - allow app to continue even if Farcaster SDK fails
     }
   }, []);
 
@@ -321,9 +329,11 @@ function App() {
     <ErrorBoundary>
       <ThirdwebProvider>
         <FarcasterWalletProvider>
-          <MiniAppProvider>
-            <AppShell client={client} />
-          </MiniAppProvider>
+          <ErrorBoundary>
+            <NeynarProvider>
+              <AppShell client={client} />
+            </NeynarProvider>
+          </ErrorBoundary>
         </FarcasterWalletProvider>
       </ThirdwebProvider>
     </ErrorBoundary>

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMiniApp } from '@neynar/react';
+import ErrorBoundary from './ErrorBoundary';
 
 /**
  * Component to help users add the MiniApp and enable notifications
  * This uses the official Neynar React SDK
  */
-const NotificationSetup = () => {
+const NotificationSetupContent = () => {
   const { isSDKLoaded, addMiniApp } = useMiniApp();
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
@@ -44,12 +45,19 @@ const NotificationSetup = () => {
       setIsAdding(true);
       setError(null);
 
-      const result = await addMiniApp();
-      
-      if (result.added) {
+      // Add error boundary around Neynar SDK call
+      let result;
+      try {
+        result = await addMiniApp();
+      } catch (sdkError) {
+        console.error('❌ Neynar SDK error:', sdkError);
+        throw new Error('Neynar SDK returned an error. Please try again.');
+      }
+
+      if (result && result.added) {
         setIsAdded(true);
         console.log('✅ MiniApp added successfully');
-        
+
         if (result.notificationDetails) {
           console.log('🔔 Notification token received:', result.notificationDetails.token);
           // The webhook will handle storing this token
@@ -131,6 +139,17 @@ const NotificationSetup = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+/**
+ * Wrapper component with error boundary for NotificationSetup
+ */
+const NotificationSetup = () => {
+  return (
+    <ErrorBoundary>
+      <NotificationSetupContent />
+    </ErrorBoundary>
   );
 };
 
