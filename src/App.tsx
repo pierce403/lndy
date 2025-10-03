@@ -6,6 +6,7 @@ import { createWallet, walletConnect } from "thirdweb/wallets";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { MiniAppProvider } from "@neynar/react";
 import "./App.css";
+import "./utils/errorHandler"; // Import global error handling
 
 import CreateLoan from "./components/CreateLoan";
 import LoanList from "./components/LoanList";
