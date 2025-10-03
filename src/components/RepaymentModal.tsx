@@ -8,6 +8,7 @@ import Modal from "./Modal";
 import { Loan } from "../types/types";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 import { notifyLoanRepaid, notifyContributorsRepayment } from "../utils/notifications";
+import { notifyServerLoanRepaid } from "../utils/serverNotifications";
 
 interface RepaymentModalProps {
   isOpen: boolean;
@@ -195,20 +196,30 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
               isPartial: isPartial,
             };
             
-            // Notify the borrower about their repayment
-            notifyLoanRepaid(repaymentData).catch(error => 
-              console.error("❌ RepaymentModal: Failed to send repayment notification:", error)
-            );
-            
+            // Send both client-side and server-side notifications
+            const notificationPromises = [
+              notifyLoanRepaid(repaymentData),
+              notifyServerLoanRepaid({
+                ...repaymentData,
+                targetFids: [/* TODO: Get borrower's FID from address */]
+              })
+            ];
+
             // Notify all contributors about the repayment
             contributors.forEach(contributorAddress => {
-              notifyContributorsRepayment({
-                ...repaymentData,
-                contributorAddress: contributorAddress,
-              }).catch(error => 
-                console.error("❌ RepaymentModal: Failed to send contributor notification:", error)
+              notificationPromises.push(
+                notifyContributorsRepayment({
+                  ...repaymentData,
+                  contributorAddress: contributorAddress,
+                })
               );
             });
+
+            Promise.all(notificationPromises).then(() => {
+              console.log("✅ RepaymentModal: All notifications sent successfully");
+            }).catch(error => 
+              console.error("❌ RepaymentModal: Failed to send notifications:", error)
+            );
           }
           
           onSuccess(result.transactionHash, `${repaymentAmount} USDC`);

@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/notifications/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "env": {
+    "NEYNAR_API_KEY": "@neynar_api_key"
+  }
+}

@@ -6,6 +6,7 @@ import { client } from "../lib/client";
 import { useWallet } from "../hooks/useWallet";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 import { notifyLoanCreated, broadcastNewLoan } from "../utils/notifications";
+import { notifyServerLoanCreated } from "../utils/serverNotifications";
 import Modal from "./Modal";
 
 const CreateLoan = () => {
@@ -243,14 +244,18 @@ const CreateLoan = () => {
               description: description,
             };
             
-            // Notify the borrower about their loan creation
-            notifyLoanCreated(loanData).catch(error => 
-              console.error("❌ CreateLoan: Failed to send loan creation notification:", error)
-            );
-            
-            // Broadcast to all users about the new loan
-            broadcastNewLoan(loanData).catch(error => 
-              console.error("❌ CreateLoan: Failed to broadcast new loan notification:", error)
+            // Send both client-side and server-side notifications
+            Promise.all([
+              notifyLoanCreated(loanData),
+              broadcastNewLoan(loanData),
+              notifyServerLoanCreated({
+                ...loanData,
+                targetFids: [/* TODO: Get all subscribed user FIDs */]
+              })
+            ]).then(() => {
+              console.log("✅ CreateLoan: All notifications sent successfully");
+            }).catch(error => 
+              console.error("❌ CreateLoan: Failed to send notifications:", error)
             );
           }
           
