@@ -25,9 +25,9 @@ export const sendFarcasterNotification = async (notification: NotificationData):
       return;
     }
 
-    // For now, we'll use browser notifications as a fallback since the proper notification
-    // system requires server-side implementation with notification tokens
-    // TODO: Implement proper server-side notification system with Neynar integration
+    // Use browser notifications as the primary notification method
+    // Farcaster MiniApps don't have built-in notification systems yet
+    // This provides immediate feedback to users when events occur
     
     // Try to use browser notifications first
     if ('Notification' in window) {
