@@ -189,9 +189,7 @@ const AppShell = ({ client }: AppShellProps) => {
                         label: activeWallet || isConnecting ? undefined : "Connect Wallet",
                       }}
                       connectModal={{
-                        size: "wide",
                         title: "Connect a wallet",
-                        titleIcon: "/lndy-favicon.svg",
                         showThirdwebBranding: false,
                       }}
                     />
