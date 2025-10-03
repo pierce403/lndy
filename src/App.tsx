@@ -4,6 +4,7 @@ import { base } from "thirdweb/chains";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createWallet, walletConnect } from "thirdweb/wallets";
 import { sdk } from "@farcaster/miniapp-sdk";
+import { MiniAppProvider } from "@neynar/react";
 import "./App.css";
 
 import CreateLoan from "./components/CreateLoan";
@@ -12,6 +13,7 @@ import Dashboard from "./components/Dashboard";
 import MyLoans from "./pages/MyLoans";
 import About from "./components/About";
 import ErrorBoundary from "./components/ErrorBoundary";
+import NotificationSetup from "./components/NotificationSetup";
 import { useIsFarcasterPreferred } from "./hooks/useIsFarcasterPreferred";
 import { FarcasterWalletProvider, useFarcasterWalletContext } from "./context/FarcasterWalletContext";
 
@@ -264,6 +266,11 @@ const AppShell = ({ client }: AppShellProps) => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Notification Setup Component */}
+        <div className="mb-8">
+          <NotificationSetup />
+        </div>
+        
         {activeTab === "browse" && <LoanList />}
         {activeTab === "create" && <CreateLoan />}
         {activeTab === "myloans" && <MyLoans />}
@@ -315,7 +322,9 @@ function App() {
     <ErrorBoundary>
       <ThirdwebProvider>
         <FarcasterWalletProvider>
-          <AppShell client={client} />
+          <MiniAppProvider>
+            <AppShell client={client} />
+          </MiniAppProvider>
         </FarcasterWalletProvider>
       </ThirdwebProvider>
     </ErrorBoundary>
