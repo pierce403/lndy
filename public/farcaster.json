@@ -22,6 +22,6 @@
     },
     "splashImageUrl": "https://lndy.org/miniapp-tile.png",
     "splashBackgroundColor": "#111827",
-    "webhookUrl": "https://api.neynar.com/f/app/YOUR_NEYNAR_CLIENT_ID/event"
+    "webhookUrl": "https://api.neynar.com/f/app/7caa5dd8-7e00-434d-b404-2b1a7faa04d8/event"
   }
 }
