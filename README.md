@@ -218,6 +218,32 @@ thirdweb deploy
 - "I helped fund this person's dream" collectibles
 - Progressive status evolution in metadata
 
+## MiniApp Notifications
+
+This MiniApp implements comprehensive notification behaviors for Farcaster users:
+
+### 🔔 **Notification Types**
+
+- **New Loan Creation**: All users who have added the MiniApp will receive a notification whenever a new loan is created, keeping the community informed about new funding opportunities.
+
+- **Loan Contribution**: Loan creators will receive a notification each time someone contributes to their loan, providing real-time updates on funding progress.
+
+- **Loan Repayment**: Contributors will receive a notification whenever a loan they contributed to is repaid, including partial repayments, ensuring transparency in the repayment process.
+
+### 📱 **How to Enable Notifications**
+
+To receive these notifications:
+1. Open the LNDY MiniApp within your Farcaster client
+2. Ensure you have added the MiniApp to your Farcaster account
+3. Notifications will automatically appear in your Farcaster feed when relevant events occur
+
+### 🎯 **Notification Benefits**
+
+- **Real-time Updates**: Stay informed about loan activity without constantly checking the app
+- **Community Engagement**: Know when new opportunities arise or when your loans receive support
+- **Transparency**: Track repayment progress and maintain accountability in the lending process
+- **Social Connection**: Feel connected to the community through shared financial support
+
 ## Contributing
 
 1. Fork the repository

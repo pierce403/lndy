@@ -7,6 +7,7 @@ import { base } from "thirdweb/chains";
 import Modal from "./Modal";
 import { Loan } from "../types/types";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
+import { notifyLoanContributed } from "../utils/notifications";
 
 interface FundingModalProps {
   isOpen: boolean;
@@ -149,6 +150,22 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
       executeTransaction(transaction, {
         onSuccess: (result) => {
           console.log("🎉 FundingModal: Funding successful:", result.transactionHash);
+          
+          // Send notification for loan contribution
+          if (address) {
+            const contributionData = {
+              loanId: loan.address,
+              borrowerAddress: loan.borrower,
+              contributorAddress: address,
+              amount: `${fundingAmount} USDC`,
+              loanTitle: loan.title || 'Untitled Loan',
+            };
+            
+            notifyLoanContributed(contributionData).catch(error => 
+              console.error("❌ FundingModal: Failed to send contribution notification:", error)
+            );
+          }
+          
           onSuccess(result.transactionHash, `${fundingAmount} USDC`);
           onClose();
         },

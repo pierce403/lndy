@@ -7,6 +7,7 @@ import { base } from "thirdweb/chains";
 import Modal from "./Modal";
 import { Loan } from "../types/types";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
+import { notifyLoanRepaid, notifyContributorsRepayment } from "../utils/notifications";
 
 interface RepaymentModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
   const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(true);
   const [actualRepaidAmount, setActualRepaidAmount] = useState<number>(0);
   const [totalRepaidAmount, setTotalRepaidAmount] = useState<number>(0);
+  const [contributors, setContributors] = useState<string[]>([]);
   
   // Calculate repayment details
   const remainingAmount = (totalRepaidAmount - actualRepaidAmount);
@@ -83,9 +85,40 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
         setTotalRepaidAmount(Number(loanDetails[9]) / 1e6); // totalRepaidAmount
         setActualRepaidAmount(Number(loanDetails[10]) / 1e6); // actualRepaidAmount
         
+        // Fetch contributors from the loan contract
+        console.log("👥 RepaymentModal: Fetching contributors for loan:", loan.address);
+        
+        // Get the next token ID to determine how many tokens exist
+        const nextTokenId = await readContract({
+          contract: loanContract,
+          method: "function nextTokenId() view returns (uint256)",
+          params: [],
+        });
+        
+        // Fetch all contributors by getting token supporters
+        const contributorsList: string[] = [];
+        for (let i = 1; i < Number(nextTokenId); i++) {
+          try {
+            const supporter = await readContract({
+              contract: loanContract,
+              method: "function tokenSupporter(uint256 tokenId) view returns (address)",
+              params: [BigInt(i)],
+            });
+            if (supporter && !contributorsList.includes(supporter)) {
+              contributorsList.push(supporter);
+            }
+          } catch (error) {
+            console.warn(`⚠️ RepaymentModal: Failed to fetch supporter for token ${i}:`, error);
+          }
+        }
+        
+        console.log("✅ RepaymentModal: Found contributors:", contributorsList);
+        setContributors(contributorsList);
+        
       } catch (error) {
         console.error("❌ RepaymentModal: Failed to fetch data:", error);
         setUsdcBalance(0);
+        setContributors([]);
       } finally {
         setIsLoadingBalance(false);
       }
@@ -150,6 +183,34 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
       executeTransaction(transaction, {
         onSuccess: (result) => {
           console.log("🎉 RepaymentModal: Repayment successful:", result.transactionHash);
+          
+          // Send notifications for loan repayment
+          if (address) {
+            const isPartial = repaymentAmount < remainingAmount;
+            const repaymentData = {
+              loanId: loan.address,
+              borrowerAddress: loan.borrower,
+              amount: `${repaymentAmount} USDC`,
+              loanTitle: loan.title || 'Untitled Loan',
+              isPartial: isPartial,
+            };
+            
+            // Notify the borrower about their repayment
+            notifyLoanRepaid(repaymentData).catch(error => 
+              console.error("❌ RepaymentModal: Failed to send repayment notification:", error)
+            );
+            
+            // Notify all contributors about the repayment
+            contributors.forEach(contributorAddress => {
+              notifyContributorsRepayment({
+                ...repaymentData,
+                contributorAddress: contributorAddress,
+              }).catch(error => 
+                console.error("❌ RepaymentModal: Failed to send contributor notification:", error)
+              );
+            });
+          }
+          
           onSuccess(result.transactionHash, `${repaymentAmount} USDC`);
           onClose();
         },

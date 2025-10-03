@@ -5,6 +5,7 @@ import { getLauncherContract } from "../lib/client";
 import { client } from "../lib/client";
 import { useWallet } from "../hooks/useWallet";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
+import { notifyLoanCreated, broadcastNewLoan } from "../utils/notifications";
 import Modal from "./Modal";
 
 const CreateLoan = () => {
@@ -231,6 +232,27 @@ const CreateLoan = () => {
             thankYouAmount: (interestRateBps / 100) + "%",
             targetRepaymentDate: new Date(targetRepaymentDate * 1000).toLocaleDateString()
           });
+          
+          // Send notifications for new loan creation
+          if (address) {
+            const loanData = {
+              loanId: result.transactionHash, // Using transaction hash as loan ID
+              borrowerAddress: address,
+              loanAmount: parseFloat(loanAmount) + " USDC",
+              title: title,
+              description: description,
+            };
+            
+            // Notify the borrower about their loan creation
+            notifyLoanCreated(loanData).catch(error => 
+              console.error("❌ CreateLoan: Failed to send loan creation notification:", error)
+            );
+            
+            // Broadcast to all users about the new loan
+            broadcastNewLoan(loanData).catch(error => 
+              console.error("❌ CreateLoan: Failed to broadcast new loan notification:", error)
+            );
+          }
           
           console.log("🔄 CreateLoan: Resetting form fields...");
           setLoanAmount("100");
