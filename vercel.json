@@ -1,11 +1,5 @@
 {
-  "functions": {
-    "api/notifications/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "env": {
-    "NEYNAR_API_KEY": "@neynar_api_key",
-    "LNDY_REDIS_URL": "@lndy_redis_url"
-  }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
 }
