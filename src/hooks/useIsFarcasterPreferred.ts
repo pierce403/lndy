@@ -38,16 +38,19 @@ export const useIsFarcasterPreferred = () => {
 
     let isMounted = true;
 
-    sdk
-      .isInMiniApp()
-      .then((result) => {
-        if (isMounted && result) {
-          setIsPreferred(true);
-        }
-      })
-      .catch((error) => {
-        console.debug("useIsFarcasterPreferred: sdk.isInMiniApp error", error);
-      });
+    // Only call SDK if it's available
+    if (sdk && typeof sdk.isInMiniApp === 'function') {
+      sdk
+        .isInMiniApp()
+        .then((result) => {
+          if (isMounted && result) {
+            setIsPreferred(true);
+          }
+        })
+        .catch((error) => {
+          console.debug("useIsFarcasterPreferred: sdk.isInMiniApp error", error);
+        });
+    }
 
     return () => {
       isMounted = false;

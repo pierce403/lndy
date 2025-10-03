@@ -101,3 +101,39 @@ The `index.html` file contains critical meta tags for Farcaster compliance:
 - Always add new PNG files to git: `git add public/og-card.png public/miniapp-tile.png`
 - Update both `og:image` and `fc:miniapp` when changing preview images
 - Test image URLs are accessible at `https://lndy.org/` before deploying
+
+## Error Handling and Debugging
+
+### React Error #31 - "Objects are not valid as a React child"
+
+**Problem**: React error #31 occurs when a component tries to render an object instead of a React element or primitive value.
+
+**Root Cause**: Third-party libraries (thirdweb, Neynar SDK) can throw errors during hook execution that aren't caught by React error boundaries.
+
+**Symptoms**:
+- Minified React error #31 in console
+- App crashes during initial render
+- Error boundaries don't catch the error
+- Stack trace shows minified function names
+
+**Solution Applied**:
+1. **Root Error Boundary**: Added `RootErrorBoundary` that catches errors before React renders
+2. **Global Error Handlers**: Added window error handlers for uncaught errors and unhandled promise rejections
+3. **Provider Error Boundaries**: Wrapped `ThirdwebProvider`, `FarcasterWalletProvider`, and `NeynarProvider` in error boundaries
+4. **Hook Error Handling**: Added defensive checks in `useFarcasterWallet` and `useIsFarcasterPreferred` hooks
+5. **SDK Validation**: Added checks for SDK availability before calling methods
+
+**Key Changes**:
+- `src/main.tsx`: Added global error handlers and root error boundary
+- `src/components/RootErrorBoundary.tsx`: New component for catching pre-render errors
+- `src/context/FarcasterWalletContext.tsx`: Added error boundary around provider
+- `src/hooks/useFarcasterWallet.ts`: Added SDK availability checks
+- `src/hooks/useIsFarcasterPreferred.ts`: Added SDK availability checks
+
+**Prevention Strategy**:
+- Always check if SDK methods exist before calling them
+- Wrap third-party providers in error boundaries
+- Add global error handlers for uncaught errors
+- Use defensive programming with third-party libraries
+
+**Testing**: Deploy and verify that React error #31 is caught and displayed in error UI instead of crashing the app.

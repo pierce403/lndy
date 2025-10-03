@@ -28,14 +28,33 @@ export const useFarcasterWallet = () => {
         setIsLoading(true);
         setError(null);
 
+        // Check if SDK is available before calling methods
+        if (!sdk || typeof sdk.isInMiniApp !== 'function') {
+          console.log("SDK not available, disabling embedded wallet");
+          setIsDisabled(true);
+          setIsLoading(false);
+          setProvider(null);
+          return;
+        }
+
         // Check if we're in a Farcaster Mini App environment
         console.log("🔧 useFarcasterWallet: Checking if in Farcaster environment");
 
         let isMiniApp = false;
         try {
-          isMiniApp = await sdk.isInMiniApp();
+          // Add timeout and better error handling
+          const isMiniAppPromise = sdk.isInMiniApp();
+          if (isMiniAppPromise && typeof isMiniAppPromise.then === 'function') {
+            // It's a promise, wait for it
+            isMiniApp = await isMiniAppPromise;
+          } else {
+            // It's synchronous, use directly
+            isMiniApp = isMiniAppPromise;
+          }
         } catch (err) {
           console.warn("⚠️ useFarcasterWallet: sdk.isInMiniApp threw", err);
+          // If isInMiniApp fails, assume we're not in a MiniApp
+          isMiniApp = false;
         }
 
         console.log("🔧 useFarcasterWallet: isMiniApp =", isMiniApp);

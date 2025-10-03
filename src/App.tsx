@@ -327,15 +327,15 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ThirdwebProvider>
-        <FarcasterWalletProvider>
-          <ErrorBoundary>
+      <ErrorBoundary>
+        <ThirdwebProvider>
+          <FarcasterWalletProvider>
             <NeynarProvider>
               <AppShell client={client} />
             </NeynarProvider>
-          </ErrorBoundary>
-        </FarcasterWalletProvider>
-      </ThirdwebProvider>
+          </FarcasterWalletProvider>
+        </ThirdwebProvider>
+      </ErrorBoundary>
     </ErrorBoundary>
   );
 }
