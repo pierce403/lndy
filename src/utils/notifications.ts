@@ -25,45 +25,10 @@ export const sendFarcasterNotification = async (notification: NotificationData):
       return;
     }
 
-    // Use browser notifications as the primary notification method
-    // Farcaster MiniApps don't have built-in notification systems yet
-    // This provides immediate feedback to users when events occur
-    
-    // Try to use browser notifications first
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        new Notification(notification.title, {
-          body: notification.message,
-          icon: '/lndy-favicon.svg',
-          badge: '/lndy-favicon.svg'
-        });
-        console.log("✅ Notifications: Browser notification shown");
-      } else if (Notification.permission !== 'denied') {
-        // Request permission
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          new Notification(notification.title, {
-            body: notification.message,
-            icon: '/lndy-favicon.svg',
-            badge: '/lndy-favicon.svg'
-          });
-          console.log("✅ Notifications: Browser notification shown after permission granted");
-        } else {
-          // Fallback to alert
-          alert(`🔔 ${notification.title}\n\n${notification.message}`);
-          console.log("✅ Notifications: Alert notification shown (permission denied)");
-        }
-      } else {
-        // Fallback to alert
-        alert(`🔔 ${notification.title}\n\n${notification.message}`);
-        console.log("✅ Notifications: Alert notification shown (permission denied)");
-      }
-    } else {
-      // Fallback to alert if notifications not supported
-      alert(`🔔 ${notification.title}\n\n${notification.message}`);
-      console.log("✅ Notifications: Alert notification shown (notifications not supported)");
-    }
-    
+    // Farcaster notifications are handled server-side via Neynar API
+    // This function is kept for compatibility but doesn't show browser notifications
+    // Real notifications appear in the Farcaster client notification tray
+
     // Log the notification for debugging
     console.log("📝 Notifications: Notification details:", {
       title: notification.title,
@@ -74,7 +39,7 @@ export const sendFarcasterNotification = async (notification: NotificationData):
       contributorAddress: notification.contributorAddress,
       borrowerAddress: notification.borrowerAddress
     });
-    
+
   } catch (error) {
     console.error("❌ Notifications: Failed to send Farcaster notification:", error);
     // Don't throw - notifications are not critical to the core functionality

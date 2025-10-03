@@ -5,7 +5,7 @@ import { getLauncherContract } from "../lib/client";
 import { client } from "../lib/client";
 import { useWallet } from "../hooks/useWallet";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
-import { notifyLoanCreated, broadcastNewLoan } from "../utils/notifications";
+// Removed client-side notifications - only using server-side Farcaster notifications
 import { notifyServerLoanCreated } from "../utils/serverNotifications";
 import { getAllSubscribedUserFids } from "../utils/fidResolver";
 import Modal from "./Modal";
@@ -235,7 +235,7 @@ const CreateLoan = () => {
             targetRepaymentDate: new Date(targetRepaymentDate * 1000).toLocaleDateString()
           });
           
-          // Send notifications for new loan creation
+          // Send server-side notifications for new loan creation
           if (address) {
             const loanData = {
               loanId: result.transactionHash, // Using transaction hash as loan ID
@@ -244,29 +244,19 @@ const CreateLoan = () => {
               title: title,
               description: description,
             };
-            
-            // Send both client-side and server-side notifications
-            const notificationPromises = [
-              notifyLoanCreated(loanData),
-              broadcastNewLoan(loanData)
-            ];
-            
-            // Get all subscribed users and send server notification
+
+            // Send server-side notification to all subscribed users
             getAllSubscribedUserFids().then(subscribedFids => {
               if (subscribedFids.length > 0) {
-                notificationPromises.push(
-                  notifyServerLoanCreated({
-                    ...loanData,
-                    targetFids: subscribedFids
-                  })
-                );
+                return notifyServerLoanCreated({
+                  ...loanData,
+                  targetFids: subscribedFids
+                });
               }
-              
-              return Promise.all(notificationPromises);
             }).then(() => {
-              console.log("✅ CreateLoan: All notifications sent successfully");
-            }).catch(error => 
-              console.error("❌ CreateLoan: Failed to send notifications:", error)
+              console.log("✅ CreateLoan: Server notification sent successfully");
+            }).catch(error =>
+              console.error("❌ CreateLoan: Failed to send server notification:", error)
             );
           }
           

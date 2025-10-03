@@ -7,7 +7,7 @@ import { base } from "thirdweb/chains";
 import Modal from "./Modal";
 import { Loan } from "../types/types";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
-import { notifyLoanContributed } from "../utils/notifications";
+// Removed client-side notifications - only using server-side Farcaster notifications
 import { notifyServerLoanContributed } from "../utils/serverNotifications";
 import { resolveFidFromAddress } from "../utils/fidResolver";
 
@@ -153,42 +153,35 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
         onSuccess: (result) => {
           console.log("🎉 FundingModal: Funding successful:", result.transactionHash);
           
-          // Send notification for loan contribution
-          if (address) {
-            console.log("🔔 FundingModal: Preparing to send contribution notification...");
-            const contributionData = {
-              loanId: loan.address,
-              borrowerAddress: loan.borrower,
-              contributorAddress: address,
-              amount: `${fundingAmount} USDC`,
-              loanTitle: loan.title || 'Untitled Loan',
-            };
-            
-            console.log("🔔 FundingModal: Contribution data:", contributionData);
-            
-            // Send both client-side and server-side notifications
-            const notificationPromises = [notifyLoanContributed(contributionData)];
-            
-            // Resolve borrower's FID and send server notification
-            resolveFidFromAddress(loan.borrower).then(borrowerFid => {
-              if (borrowerFid) {
-                notificationPromises.push(
-                  notifyServerLoanContributed({
+            // Send server-side notification for loan contribution
+            if (address) {
+              console.log("🔔 FundingModal: Preparing to send contribution notification...");
+              const contributionData = {
+                loanId: loan.address,
+                borrowerAddress: loan.borrower,
+                contributorAddress: address,
+                amount: `${fundingAmount} USDC`,
+                loanTitle: loan.title || 'Untitled Loan',
+              };
+
+              console.log("🔔 FundingModal: Contribution data:", contributionData);
+
+              // Resolve borrower's FID and send server notification
+              resolveFidFromAddress(loan.borrower).then(borrowerFid => {
+                if (borrowerFid) {
+                  return notifyServerLoanContributed({
                     ...contributionData,
                     targetFids: [borrowerFid]
-                  })
-                );
-              }
-              
-              return Promise.all(notificationPromises);
-            }).then(() => {
-              console.log("✅ FundingModal: All notifications sent successfully");
-            }).catch(error => 
-              console.error("❌ FundingModal: Failed to send notifications:", error)
-            );
-          } else {
-            console.log("⚠️ FundingModal: No address available, skipping notification");
-          }
+                  });
+                }
+              }).then(() => {
+                console.log("✅ FundingModal: Server notification sent successfully");
+              }).catch(error =>
+                console.error("❌ FundingModal: Failed to send server notification:", error)
+              );
+            } else {
+              console.log("⚠️ FundingModal: No address available, skipping notification");
+            }
           
           onSuccess(result.transactionHash, `${fundingAmount} USDC`);
           onClose();
