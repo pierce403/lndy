@@ -11,30 +11,49 @@ This guide will help you set up Neynar integration for Farcaster MiniApp notific
 5. Generate a new API key for your project
 6. Copy the API key for use in your environment variables
 
-## 2. Configure Environment Variables
+## 2. Create a Neynar Signer (for posting notifications)
+
+1. In your Neynar project dashboard, look for "Signers" or "Cast Signers"
+2. Click "Create New Signer"
+3. Connect a Farcaster account (this will be the sender of notifications)
+   - **Recommended**: Create a dedicated account like `@lndy` for notifications
+   - **Alternative**: Use your personal Farcaster account
+4. Give it a name like "LNDY Notifications"
+5. Set permissions for posting casts
+6. Copy the generated UUID (looks like: `12345678-1234-1234-1234-123456789abc`)
+7. This is your `NEYNAR_SIGNER_UUID`
+
+## 3. Configure Environment Variables
 
 Add the following to your `.env` file:
 
 ```bash
 # Neynar API Key for Farcaster notifications
 NEYNAR_API_KEY=your_neynar_api_key_here
+
+# Neynar Signer UUID for posting casts
+NEYNAR_SIGNER_UUID=your_neynar_signer_uuid_here
 ```
 
-## 3. Vercel Configuration
+## 4. Vercel Configuration
 
 ### Option A: Using Vercel Dashboard
 1. Go to your project in Vercel Dashboard
 2. Navigate to Settings > Environment Variables
 3. Add `NEYNAR_API_KEY` with your API key value
-4. Deploy your project
+4. Add `NEYNAR_SIGNER_UUID` with your signer UUID value
+5. Deploy your project
 
 ### Option B: Using Vercel CLI
 ```bash
 vercel env add NEYNAR_API_KEY
 # Enter your API key when prompted
+
+vercel env add NEYNAR_SIGNER_UUID
+# Enter your signer UUID when prompted
 ```
 
-## 4. Update MiniApp Manifest
+## 5. Update MiniApp Manifest
 
 Add the following to your `public/farcaster.json`:
 
