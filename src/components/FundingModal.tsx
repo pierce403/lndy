@@ -153,6 +153,7 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
           
           // Send notification for loan contribution
           if (address) {
+            console.log("🔔 FundingModal: Preparing to send contribution notification...");
             const contributionData = {
               loanId: loan.address,
               borrowerAddress: loan.borrower,
@@ -161,9 +162,15 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
               loanTitle: loan.title || 'Untitled Loan',
             };
             
-            notifyLoanContributed(contributionData).catch(error => 
+            console.log("🔔 FundingModal: Contribution data:", contributionData);
+            
+            notifyLoanContributed(contributionData).then(() => {
+              console.log("✅ FundingModal: Contribution notification sent successfully");
+            }).catch(error => 
               console.error("❌ FundingModal: Failed to send contribution notification:", error)
             );
+          } else {
+            console.log("⚠️ FundingModal: No address available, skipping notification");
           }
           
           onSuccess(result.transactionHash, `${fundingAmount} USDC`);

@@ -25,18 +25,56 @@ export const sendFarcasterNotification = async (notification: NotificationData):
       return;
     }
 
-    // Use the Farcaster SDK to send a notification
-    // The SDK provides a notification API that we can use
-    if (sdk.actions && typeof sdk.actions.showNotification === 'function') {
-      await sdk.actions.showNotification({
-        title: notification.title,
-        message: notification.message,
-        type: 'info', // or 'success', 'warning', 'error'
-      });
-      console.log("✅ Notifications: Farcaster notification sent successfully");
+    // For now, we'll use browser notifications as a fallback since the proper notification
+    // system requires server-side implementation with notification tokens
+    // TODO: Implement proper server-side notification system with Neynar integration
+    
+    // Try to use browser notifications first
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(notification.title, {
+          body: notification.message,
+          icon: '/lndy-favicon.svg',
+          badge: '/lndy-favicon.svg'
+        });
+        console.log("✅ Notifications: Browser notification shown");
+      } else if (Notification.permission !== 'denied') {
+        // Request permission
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          new Notification(notification.title, {
+            body: notification.message,
+            icon: '/lndy-favicon.svg',
+            badge: '/lndy-favicon.svg'
+          });
+          console.log("✅ Notifications: Browser notification shown after permission granted");
+        } else {
+          // Fallback to alert
+          alert(`🔔 ${notification.title}\n\n${notification.message}`);
+          console.log("✅ Notifications: Alert notification shown (permission denied)");
+        }
+      } else {
+        // Fallback to alert
+        alert(`🔔 ${notification.title}\n\n${notification.message}`);
+        console.log("✅ Notifications: Alert notification shown (permission denied)");
+      }
     } else {
-      console.warn("⚠️ Notifications: sdk.actions.showNotification not available");
+      // Fallback to alert if notifications not supported
+      alert(`🔔 ${notification.title}\n\n${notification.message}`);
+      console.log("✅ Notifications: Alert notification shown (notifications not supported)");
     }
+    
+    // Log the notification for debugging
+    console.log("📝 Notifications: Notification details:", {
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      loanId: notification.loanId,
+      amount: notification.amount,
+      contributorAddress: notification.contributorAddress,
+      borrowerAddress: notification.borrowerAddress
+    });
+    
   } catch (error) {
     console.error("❌ Notifications: Failed to send Farcaster notification:", error);
     // Don't throw - notifications are not critical to the core functionality
