@@ -7,20 +7,20 @@
   "miniApp": {
     "version": "1",
     "name": "LNDY - Social Lending",
-    "iconUrl": "https://lndy.org/lndy-favicon.svg",
+    "iconUrl": "https://lndy.org/miniapp-tile.png",
     "homeUrl": "https://lndy.org",
-    "imageUrl": "https://lndy.org/lndy-favicon.svg",
+    "imageUrl": "https://lndy.org/miniapp-tile.png",
     "button": {
       "title": "Browse Loans",
       "action": {
         "type": "launch_miniapp",
         "name": "LNDY - Social Lending",
         "url": "https://lndy.org",
-        "splashImageUrl": "https://lndy.org/lndy-favicon.svg",
+        "splashImageUrl": "https://lndy.org/miniapp-tile.png",
         "splashBackgroundColor": "#111827"
       }
     },
-    "splashImageUrl": "https://lndy.org/lndy-favicon.svg",
+    "splashImageUrl": "https://lndy.org/miniapp-tile.png",
     "splashBackgroundColor": "#111827",
     "webhookUrl": "https://lndy.org/api/webhook"
   }
