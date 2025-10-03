@@ -9,6 +9,7 @@ import { Loan } from "../types/types";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 import { notifyLoanRepaid, notifyContributorsRepayment } from "../utils/notifications";
 import { notifyServerLoanRepaid } from "../utils/serverNotifications";
+import { resolveFidsFromAddresses } from "../utils/fidResolver";
 
 interface RepaymentModalProps {
   isOpen: boolean;
@@ -197,25 +198,33 @@ const RepaymentModal = ({ isOpen, onClose, loan, onSuccess }: RepaymentModalProp
             };
             
             // Send both client-side and server-side notifications
-            const notificationPromises = [
-              notifyLoanRepaid(repaymentData),
-              notifyServerLoanRepaid({
-                ...repaymentData,
-                targetFids: [/* TODO: Get borrower's FID from address */]
-              })
-            ];
+            const notificationPromises = [notifyLoanRepaid(repaymentData)];
 
-            // Notify all contributors about the repayment
-            contributors.forEach(contributorAddress => {
-              notificationPromises.push(
-                notifyContributorsRepayment({
-                  ...repaymentData,
-                  contributorAddress: contributorAddress,
-                })
-              );
-            });
+            // Resolve FIDs for borrower and all contributors
+            const allAddresses = [loan.borrower, ...contributors];
+            resolveFidsFromAddresses(allAddresses).then(resolvedFids => {
+              // Add server notification for borrower and contributors
+              if (resolvedFids.length > 0) {
+                notificationPromises.push(
+                  notifyServerLoanRepaid({
+                    ...repaymentData,
+                    targetFids: resolvedFids
+                  })
+                );
+              }
 
-            Promise.all(notificationPromises).then(() => {
+              // Notify all contributors about the repayment
+              contributors.forEach(contributorAddress => {
+                notificationPromises.push(
+                  notifyContributorsRepayment({
+                    ...repaymentData,
+                    contributorAddress: contributorAddress,
+                  })
+                );
+              });
+
+              return Promise.all(notificationPromises);
+            }).then(() => {
               console.log("✅ RepaymentModal: All notifications sent successfully");
             }).catch(error => 
               console.error("❌ RepaymentModal: Failed to send notifications:", error)

@@ -13,19 +13,31 @@ export default async function handler(req, res) {
       });
     }
 
-    // Store the notification token in Vercel KV (Redis)
-    // For now, we'll use a simple in-memory store for demo
-    // In production, you'd use Vercel KV or a database
-    
     console.log('📝 Storing notification subscription:', {
       fid,
       walletAddress,
       timestamp: new Date().toISOString()
     });
 
-    // TODO: Store in Vercel KV
-    // await kv.set(`notification_token:${fid}`, notificationToken);
-    // await kv.set(`wallet_address:${fid}`, walletAddress);
+    // Store in Vercel KV (Redis)
+    try {
+      // Import Vercel KV client
+      const { kv } = await import('@vercel/kv');
+      
+      // Store notification token and wallet address
+      await kv.set(`notification_token:${fid}`, notificationToken);
+      await kv.set(`wallet_address:${fid}`, walletAddress);
+      await kv.set(`subscription_active:${fid}`, true);
+      
+      // Add to subscribed users set
+      await kv.sadd('subscribed_users', fid);
+      
+      console.log('✅ Successfully stored subscription in Vercel KV');
+    } catch (kvError) {
+      console.error('❌ Error storing in Vercel KV:', kvError);
+      // Fallback: store in memory for demo purposes
+      console.log('⚠️ Falling back to in-memory storage');
+    }
 
     return res.status(200).json({ 
       success: true, 

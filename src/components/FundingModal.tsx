@@ -9,6 +9,7 @@ import { Loan } from "../types/types";
 import { useTransactionExecutor } from "../hooks/useTransactionExecutor";
 import { notifyLoanContributed } from "../utils/notifications";
 import { notifyServerLoanContributed } from "../utils/serverNotifications";
+import { resolveFidFromAddress } from "../utils/fidResolver";
 
 interface FundingModalProps {
   isOpen: boolean;
@@ -166,13 +167,21 @@ const FundingModal = ({ isOpen, onClose, loan, onSuccess }: FundingModalProps) =
             console.log("🔔 FundingModal: Contribution data:", contributionData);
             
             // Send both client-side and server-side notifications
-            Promise.all([
-              notifyLoanContributed(contributionData),
-              notifyServerLoanContributed({
-                ...contributionData,
-                targetFids: [/* TODO: Get borrower's FID from address */]
-              })
-            ]).then(() => {
+            const notificationPromises = [notifyLoanContributed(contributionData)];
+            
+            // Resolve borrower's FID and send server notification
+            resolveFidFromAddress(loan.borrower).then(borrowerFid => {
+              if (borrowerFid) {
+                notificationPromises.push(
+                  notifyServerLoanContributed({
+                    ...contributionData,
+                    targetFids: [borrowerFid]
+                  })
+                );
+              }
+              
+              return Promise.all(notificationPromises);
+            }).then(() => {
               console.log("✅ FundingModal: All notifications sent successfully");
             }).catch(error => 
               console.error("❌ FundingModal: Failed to send notifications:", error)
