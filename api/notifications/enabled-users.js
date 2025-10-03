@@ -5,13 +5,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('📋 Getting users with notifications enabled from Vercel KV');
+    console.log('📋 Getting users with notifications enabled from Redis');
 
-    // Get all users with notifications enabled from Vercel KV
-    const { kv } = await import('@vercel/kv');
+    // Get all users with notifications enabled from Redis
+    const { getRedisClient } = await import('../utils/redis.js');
+    const redis = await getRedisClient();
     
     // Get all FIDs from the notifications_enabled_users set
-    const enabledFids = await kv.smembers('notifications_enabled_users');
+    const enabledFids = await redis.sMembers('notifications_enabled_users');
     
     // Convert to numbers and filter out any invalid values
     const validFids = enabledFids

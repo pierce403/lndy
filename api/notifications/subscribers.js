@@ -5,13 +5,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('📋 Getting all subscribed users from Vercel KV');
+    console.log('📋 Getting all subscribed users from Redis');
 
-    // Get all subscribed users from Vercel KV
-    const { kv } = await import('@vercel/kv');
+    // Get all subscribed users from Redis
+    const { getRedisClient } = await import('../utils/redis.js');
+    const redis = await getRedisClient();
     
     // Get all FIDs from the subscribed_users set
-    const subscribedFids = await kv.smembers('subscribed_users');
+    const subscribedFids = await redis.sMembers('subscribed_users');
     
     // Convert to numbers and filter out any invalid values
     const validFids = subscribedFids

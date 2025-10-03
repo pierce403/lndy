@@ -5,6 +5,7 @@
     }
   },
   "env": {
-    "NEYNAR_API_KEY": "@neynar_api_key"
+    "NEYNAR_API_KEY": "@neynar_api_key",
+    "LNDY_REDIS_URL": "@lndy_redis_url"
   }
 }

@@ -56,13 +56,14 @@ async function handleNotificationsEnabled(event) {
       notificationDetails
     });
 
-    // Store user's notification preferences in Vercel KV
-    const { kv } = await import('@vercel/kv');
+    // Store user's notification preferences in Redis
+    const { getRedisClient } = await import('./utils/redis.js');
+    const redis = await getRedisClient();
     
-    await kv.set(`notification_enabled:${fid}`, true);
-    await kv.set(`notification_token:${fid}`, notificationDetails?.token || '');
-    await kv.set(`notification_url:${fid}`, notificationDetails?.url || '');
-    await kv.sadd('notifications_enabled_users', fid);
+    await redis.set(`notification_enabled:${fid}`, 'true');
+    await redis.set(`notification_token:${fid}`, notificationDetails?.token || '');
+    await redis.set(`notification_url:${fid}`, notificationDetails?.url || '');
+    await redis.sAdd('notifications_enabled_users', fid.toString());
     
     console.log('✅ Stored notification preferences for FID:', fid);
   } catch (error) {
@@ -79,13 +80,14 @@ async function handleNotificationsDisabled(event) {
     
     console.log('❌ User disabled notifications for FID:', fid);
 
-    // Remove user from notifications in Vercel KV
-    const { kv } = await import('@vercel/kv');
+    // Remove user from notifications in Redis
+    const { getRedisClient } = await import('./utils/redis.js');
+    const redis = await getRedisClient();
     
-    await kv.del(`notification_enabled:${fid}`);
-    await kv.del(`notification_token:${fid}`);
-    await kv.del(`notification_url:${fid}`);
-    await kv.srem('notifications_enabled_users', fid);
+    await redis.del(`notification_enabled:${fid}`);
+    await redis.del(`notification_token:${fid}`);
+    await redis.del(`notification_url:${fid}`);
+    await redis.sRem('notifications_enabled_users', fid.toString());
     
     console.log('✅ Removed notification preferences for FID:', fid);
   } catch (error) {
@@ -103,10 +105,11 @@ async function handleMiniAppAdded(event) {
     console.log('➕ User added MiniApp for FID:', fid);
 
     // Store user as MiniApp user
-    const { kv } = await import('@vercel/kv');
+    const { getRedisClient } = await import('./utils/redis.js');
+    const redis = await getRedisClient();
     
-    await kv.set(`miniapp_user:${fid}`, true);
-    await kv.sadd('miniapp_users', fid);
+    await redis.set(`miniapp_user:${fid}`, 'true');
+    await redis.sAdd('miniapp_users', fid.toString());
     
     console.log('✅ Stored MiniApp user for FID:', fid);
   } catch (error) {
@@ -124,11 +127,12 @@ async function handleMiniAppRemoved(event) {
     console.log('➖ User removed MiniApp for FID:', fid);
 
     // Remove user from MiniApp users
-    const { kv } = await import('@vercel/kv');
+    const { getRedisClient } = await import('./utils/redis.js');
+    const redis = await getRedisClient();
     
-    await kv.del(`miniapp_user:${fid}`);
-    await kv.srem('miniapp_users', fid);
-    await kv.srem('notifications_enabled_users', fid);
+    await redis.del(`miniapp_user:${fid}`);
+    await redis.sRem('miniapp_users', fid.toString());
+    await redis.sRem('notifications_enabled_users', fid.toString());
     
     console.log('✅ Removed MiniApp user for FID:', fid);
   } catch (error) {

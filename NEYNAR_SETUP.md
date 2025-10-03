@@ -31,8 +31,8 @@ Add the following to your `.env` file:
 # Neynar API Key for Farcaster notifications
 NEYNAR_API_KEY=your_neynar_api_key_here
 
-# Neynar Signer UUID for posting casts
-NEYNAR_SIGNER_UUID=your_neynar_signer_uuid_here
+# Redis Database URL for storing notification data
+LNDY_REDIS_URL=your_redis_url_here
 ```
 
 ## 4. Vercel Configuration
@@ -41,7 +41,7 @@ NEYNAR_SIGNER_UUID=your_neynar_signer_uuid_here
 1. Go to your project in Vercel Dashboard
 2. Navigate to Settings > Environment Variables
 3. Add `NEYNAR_API_KEY` with your API key value
-4. Add `NEYNAR_SIGNER_UUID` with your signer UUID value
+4. Add `LNDY_REDIS_URL` with your Redis connection string
 5. Deploy your project
 
 ### Option B: Using Vercel CLI
@@ -49,8 +49,8 @@ NEYNAR_SIGNER_UUID=your_neynar_signer_uuid_here
 vercel env add NEYNAR_API_KEY
 # Enter your API key when prompted
 
-vercel env add NEYNAR_SIGNER_UUID
-# Enter your signer UUID when prompted
+vercel env add LNDY_REDIS_URL
+# Enter your Redis URL when prompted
 ```
 
 ## 5. Update MiniApp Manifest

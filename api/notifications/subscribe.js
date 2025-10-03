@@ -19,22 +19,23 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
 
-    // Store in Vercel KV (Redis)
+    // Store in Redis
     try {
-      // Import Vercel KV client
-      const { kv } = await import('@vercel/kv');
+      // Import Redis client
+      const { getRedisClient } = await import('../utils/redis.js');
+      const redis = await getRedisClient();
       
       // Store notification token and wallet address
-      await kv.set(`notification_token:${fid}`, notificationToken);
-      await kv.set(`wallet_address:${fid}`, walletAddress);
-      await kv.set(`subscription_active:${fid}`, true);
+      await redis.set(`notification_token:${fid}`, notificationToken);
+      await redis.set(`wallet_address:${fid}`, walletAddress);
+      await redis.set(`subscription_active:${fid}`, 'true');
       
       // Add to subscribed users set
-      await kv.sadd('subscribed_users', fid);
+      await redis.sAdd('subscribed_users', fid.toString());
       
-      console.log('✅ Successfully stored subscription in Vercel KV');
-    } catch (kvError) {
-      console.error('❌ Error storing in Vercel KV:', kvError);
+      console.log('✅ Successfully stored subscription in Redis');
+    } catch (redisError) {
+      console.error('❌ Error storing in Redis:', redisError);
       // Fallback: store in memory for demo purposes
       console.log('⚠️ Falling back to in-memory storage');
     }

@@ -47,8 +47,9 @@ export default async function handler(req, res) {
     try {
       if (targetFids && targetFids.length > 0) {
         // Filter to only users who have enabled notifications
-        const { kv } = await import('@vercel/kv');
-        const enabledUsers = await kv.smembers('notifications_enabled_users');
+        const { getRedisClient } = await import('../utils/redis.js');
+        const redis = await getRedisClient();
+        const enabledUsers = await redis.sMembers('notifications_enabled_users');
         const enabledFids = enabledUsers.map(fid => parseInt(fid)).filter(fid => !isNaN(fid));
         
         const validTargetFids = targetFids.filter(fid => enabledFids.includes(fid));
