@@ -4,13 +4,22 @@
     "payload": "eyJkb21haW4iOiJsbmR5Lm9yZyJ9",
     "signature": "MHhiOWFjNzM0N2Y0NjVkMzRiYWM2ODViODFjMjQzZWY1NjM5YTk0NGQzZGQ5NTg0MWQ0NmJlNWIwN2FlODMwOTI0NmQ4NzgwNGZmNWY1Y2M4NzdiM2M1MTk4ZTc0ZThmZGUzYTAyMGI1MThiNjhmNzRjODhmNjU2YTBlYTIwZGZiODFj"
   },
-  "frame": {
+  "miniApp": {
     "version": "1",
     "name": "LNDY - Social Lending",
     "iconUrl": "https://lndy.org/lndy-favicon.svg",
     "homeUrl": "https://lndy.org",
     "imageUrl": "https://lndy.org/lndy-favicon.svg",
-    "buttonTitle": "Browse Loans",
+    "button": {
+      "title": "Browse Loans",
+      "action": {
+        "type": "launch_miniapp",
+        "name": "LNDY - Social Lending",
+        "url": "https://lndy.org",
+        "splashImageUrl": "https://lndy.org/lndy-favicon.svg",
+        "splashBackgroundColor": "#111827"
+      }
+    },
     "splashImageUrl": "https://lndy.org/lndy-favicon.svg",
     "splashBackgroundColor": "#111827",
     "webhookUrl": "https://lndy.org/api/webhook"
