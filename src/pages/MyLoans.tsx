@@ -4,6 +4,7 @@ import { readContract } from "thirdweb";
 import { getLauncherContract, getLoanContract } from "../lib/client";
 import { Loan } from "../types/types";
 import LoanCard from "../components/LoanCard";
+import { normalizeLoanDetails } from "../utils/sanitize";
 
 const MyLoans = () => {
   const { address } = useWallet();
@@ -41,28 +42,14 @@ const MyLoans = () => {
         // Fetch details for each loan
         const loanDetailsPromises = borrowerLoans.map(async (loanAddress: string) => {
           const loanContract = getLoanContract(loanAddress);
-          
+
           const details = await readContract({
             contract: loanContract,
             method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _title, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
             params: [],
           });
 
-          return {
-            address: loanAddress,
-            loanAmount: details[0],
-            interestRate: Number(details[1]),
-            duration: 0, // Not used in current implementation
-            fundingDeadline: Number(details[3]),
-            repaymentDate: Number(details[2]),
-            title: details[4],
-            description: details[5],
-            imageURI: details[6],
-            borrower: details[7],
-            totalFunded: details[8],
-            isActive: details[11],
-            isRepaid: details[12],
-          } as Loan;
+          return normalizeLoanDetails(details, loanAddress);
         });
 
         const fetchedLoans = await Promise.all(loanDetailsPromises);

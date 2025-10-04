@@ -3,6 +3,7 @@ import { useWallet } from "./useWallet";
 import { readContract } from "thirdweb";
 import { Investment } from "../types/types";
 import { getLauncherContract, getLoanContract } from "../lib/client";
+import { sanitizeAddress, sanitizeString, toBooleanSafe, toNumberSafe } from "../utils/sanitize";
 
 export const useInvestments = () => {
   const { address } = useWallet();
@@ -34,34 +35,6 @@ export const useInvestments = () => {
           setIsLoading(false);
           return;
         }
-
-        const safeString = (value: unknown) => {
-          if (typeof value === "string") {
-            return value;
-          }
-
-          if (value == null) {
-            return "";
-          }
-
-          if (typeof value === "object" && "toString" in value) {
-            try {
-              const stringValue = String(value);
-              if (stringValue && stringValue !== "[object Object]") {
-                console.warn("⚠️ useInvestments: Non-string value received, coercing to string", {
-                  original: value,
-                  coerced: stringValue,
-                });
-                return stringValue;
-              }
-            } catch (coercionError) {
-              console.warn("⚠️ useInvestments: Failed to coerce value to string", coercionError);
-            }
-          }
-
-          console.warn("⚠️ useInvestments: Falling back for non-string value", value);
-          return "";
-        };
 
         const allInvestments: Investment[] = [];
 
@@ -111,11 +84,11 @@ export const useInvestments = () => {
                   });
 
                   // Calculate claimable amount
-                  const contributionInUSDC = Number(tokenValue) / 1e6;
-                  const claimedInUSDC = Number(claimedAmount) / 1e6;
-                  const totalRepaidAmount = Number(loanDetails[9]) / 1e6;
-                  const actualRepaidAmount = Number(loanDetails[10]) / 1e6;
-                  const loanAmount = Number(loanDetails[0]) / 1e6;
+                  const contributionInUSDC = toNumberSafe(tokenValue) / 1e6;
+                  const claimedInUSDC = toNumberSafe(claimedAmount) / 1e6;
+                  const totalRepaidAmount = toNumberSafe(loanDetails[9]) / 1e6;
+                  const actualRepaidAmount = toNumberSafe(loanDetails[10]) / 1e6;
+                  const loanAmount = toNumberSafe(loanDetails[0]) / 1e6;
                   
                   // Calculate how much this token has earned so far
                   const totalEarned = loanAmount > 0 ? (contributionInUSDC * actualRepaidAmount) / loanAmount : 0;
@@ -127,11 +100,11 @@ export const useInvestments = () => {
                     contributionAmount: contributionInUSDC,
                     claimedAmount: claimedInUSDC,
                     claimableAmount: claimableAmount,
-                    loanDescription: safeString(loanDetails[5]), // description
-                    loanImageURI: safeString(loanDetails[6]), // imageURI
-                    borrower: safeString(loanDetails[7]), // borrower
-                    isLoanActive: loanDetails[11], // isActive
-                    isLoanRepaid: loanDetails[12], // isFullyRepaid
+                    loanDescription: sanitizeString(loanDetails[5], "No description provided."),
+                    loanImageURI: sanitizeString(loanDetails[6]),
+                    borrower: sanitizeAddress(loanDetails[7]),
+                    isLoanActive: toBooleanSafe(loanDetails[11]),
+                    isLoanRepaid: toBooleanSafe(loanDetails[12]),
                     totalRepaidAmount: totalRepaidAmount,
                     actualRepaidAmount: actualRepaidAmount,
                   };

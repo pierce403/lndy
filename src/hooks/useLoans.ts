@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { readContract } from "thirdweb";
 import { Loan } from "../types/types";
 import { getLauncherContract, getLoanContract } from "../lib/client";
+import { normalizeLoanDetails } from "../utils/sanitize";
 
 export const useLoans = () => {
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -93,59 +94,17 @@ export const useLoans = () => {
             console.log(`🔗 useLoans: [${index + 1}] Created contract instance for loan ${loanAddress}`);
             
             console.log(`📞 useLoans: [${index + 1}] Calling getLoanDetails() for loan ${loanAddress}...`);
-            const loanDetails = await readContract({
-              contract: loanContract,
-              method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _title, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
-              params: [],
-            });
+        const loanDetails = await readContract({
+          contract: loanContract,
+          method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _title, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
+          params: [],
+        });
 
-            console.log(`📊 useLoans: [${index + 1}] Raw loan details for ${loanAddress}:`, loanDetails);
+        console.log(`📊 useLoans: [${index + 1}] Raw loan details for ${loanAddress}:`, loanDetails);
 
-            const safeString = (value: unknown, fallback = "") => {
-              if (typeof value === "string") {
-                return value;
-              }
+        const processedLoan = normalizeLoanDetails(loanDetails, loanAddress);
 
-              if (value == null) {
-                return fallback;
-              }
-
-              if (typeof value === "object" && "toString" in value) {
-                try {
-                  const stringValue = String(value);
-                  if (stringValue && stringValue !== "[object Object]") {
-                    console.warn("⚠️ useLoans: Non-string value received, coercing to string", {
-                      original: value,
-                      coerced: stringValue,
-                    });
-                    return stringValue;
-                  }
-                } catch (coercionError) {
-                  console.warn("⚠️ useLoans: Failed to coerce value to string", coercionError);
-                }
-              }
-
-              console.warn("⚠️ useLoans: Falling back for non-string value", value);
-              return fallback;
-            };
-
-            const processedLoan = {
-              address: loanAddress,
-              loanAmount: loanDetails[0],
-              interestRate: Number(loanDetails[1]),
-              duration: Number(loanDetails[2] - loanDetails[3]), // targetRepaymentDate - fundingDeadline = duration
-              fundingDeadline: Number(loanDetails[3]),
-              repaymentDate: Number(loanDetails[2]), // targetRepaymentDate
-              title: safeString(loanDetails[4]) || undefined,
-              description: safeString(loanDetails[5], ""),
-              imageURI: safeString(loanDetails[6], ""),
-              borrower: loanDetails[7],
-              totalFunded: loanDetails[8],
-              isActive: loanDetails[11],
-              isRepaid: loanDetails[12]
-            };
-            
-            console.log(`✅ useLoans: [${index + 1}] Processed loan data for ${loanAddress}:`, processedLoan);
+        console.log(`✅ useLoans: [${index + 1}] Processed loan data for ${loanAddress}:`, processedLoan);
             console.log(`💰 useLoans: [${index + 1}] Loan amount: ${Number(processedLoan.loanAmount) / 1e6} USDC`);
             console.log(`💝 useLoans: [${index + 1}] Thank you amount: ${processedLoan.interestRate / 100}%`);
             console.log(`⏱️ useLoans: [${index + 1}] Target repayment timeframe: ${processedLoan.duration / 86400} days`);
