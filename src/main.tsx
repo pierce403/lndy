@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import '@neynar/react/dist/style.css'
 import App from './App.tsx'
 import RootErrorBoundary from './components/RootErrorBoundary.tsx'
 

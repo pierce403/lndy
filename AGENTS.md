@@ -58,6 +58,7 @@ feat: implement Farcaster MiniApp notification system
 5. **Follow existing code patterns** and conventions
 6. **Commit and push immediately** after completing tasks
 7. **Update this agents file** whenever you learn something interesting about the codebase, including what works and what doesn't work
+8. **Document complex logic** with concise comments so future contributors understand intent and edge cases
 
 ## Important Notes
 
@@ -65,6 +66,8 @@ feat: implement Farcaster MiniApp notification system
 - All transactions use USDC on Base network
 - Notifications are sent via Farcaster SDK
 - Smart contracts are thoroughly tested with Foundry
+- Neynar React docs: https://docs.neynar.com/reference/mini-app-sdk — import `@neynar/react/dist/style.css` in `src/main.tsx` and wrap Mini App features with `MiniAppProvider`
+- `NeynarProvider` now disables the MiniAppProvider and surfaces a banner when Neynar throws so the rest of the app keeps working; fix by aligning with Neynar docs and ensuring Farcaster Mini App SDK is up to date before re-enabling
 
 ## Farcaster MiniApp Preview Images
 
