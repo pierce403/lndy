@@ -22,7 +22,7 @@ export const useInvestments = () => {
         console.log("🔍 useInvestments: Fetching investments for:", address);
         
         const launcherContract = getLauncherContract();
-        
+
         const allLoanAddresses = await readContract({
           contract: launcherContract,
           method: "function getAllLoans() view returns (address[])",
@@ -34,6 +34,34 @@ export const useInvestments = () => {
           setIsLoading(false);
           return;
         }
+
+        const safeString = (value: unknown) => {
+          if (typeof value === "string") {
+            return value;
+          }
+
+          if (value == null) {
+            return "";
+          }
+
+          if (typeof value === "object" && "toString" in value) {
+            try {
+              const stringValue = String(value);
+              if (stringValue && stringValue !== "[object Object]") {
+                console.warn("⚠️ useInvestments: Non-string value received, coercing to string", {
+                  original: value,
+                  coerced: stringValue,
+                });
+                return stringValue;
+              }
+            } catch (coercionError) {
+              console.warn("⚠️ useInvestments: Failed to coerce value to string", coercionError);
+            }
+          }
+
+          console.warn("⚠️ useInvestments: Falling back for non-string value", value);
+          return "";
+        };
 
         const allInvestments: Investment[] = [];
 
@@ -99,9 +127,9 @@ export const useInvestments = () => {
                     contributionAmount: contributionInUSDC,
                     claimedAmount: claimedInUSDC,
                     claimableAmount: claimableAmount,
-                    loanDescription: loanDetails[5], // description
-                    loanImageURI: loanDetails[6], // imageURI
-                    borrower: loanDetails[7], // borrower
+                    loanDescription: safeString(loanDetails[5]), // description
+                    loanImageURI: safeString(loanDetails[6]), // imageURI
+                    borrower: safeString(loanDetails[7]), // borrower
                     isLoanActive: loanDetails[11], // isActive
                     isLoanRepaid: loanDetails[12], // isFullyRepaid
                     totalRepaidAmount: totalRepaidAmount,

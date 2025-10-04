@@ -98,9 +98,37 @@ export const useLoans = () => {
               method: "function getLoanDetails() view returns (uint256 _loanAmount, uint256 _thankYouAmount, uint256 _targetRepaymentDate, uint256 _fundingDeadline, string _title, string _description, string _baseImageURI, address _borrower, uint256 _totalFunded, uint256 _totalRepaidAmount, uint256 _actualRepaidAmount, bool _isActive, bool _isFullyRepaid)",
               params: [],
             });
-            
+
             console.log(`📊 useLoans: [${index + 1}] Raw loan details for ${loanAddress}:`, loanDetails);
-            
+
+            const safeString = (value: unknown, fallback = "") => {
+              if (typeof value === "string") {
+                return value;
+              }
+
+              if (value == null) {
+                return fallback;
+              }
+
+              if (typeof value === "object" && "toString" in value) {
+                try {
+                  const stringValue = String(value);
+                  if (stringValue && stringValue !== "[object Object]") {
+                    console.warn("⚠️ useLoans: Non-string value received, coercing to string", {
+                      original: value,
+                      coerced: stringValue,
+                    });
+                    return stringValue;
+                  }
+                } catch (coercionError) {
+                  console.warn("⚠️ useLoans: Failed to coerce value to string", coercionError);
+                }
+              }
+
+              console.warn("⚠️ useLoans: Falling back for non-string value", value);
+              return fallback;
+            };
+
             const processedLoan = {
               address: loanAddress,
               loanAmount: loanDetails[0],
@@ -108,9 +136,9 @@ export const useLoans = () => {
               duration: Number(loanDetails[2] - loanDetails[3]), // targetRepaymentDate - fundingDeadline = duration
               fundingDeadline: Number(loanDetails[3]),
               repaymentDate: Number(loanDetails[2]), // targetRepaymentDate
-              title: loanDetails[4],
-              description: loanDetails[5],
-              imageURI: loanDetails[6],
+              title: safeString(loanDetails[4]) || undefined,
+              description: safeString(loanDetails[5], ""),
+              imageURI: safeString(loanDetails[6], ""),
               borrower: loanDetails[7],
               totalFunded: loanDetails[8],
               isActive: loanDetails[11],
