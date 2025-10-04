@@ -1,9 +1,11 @@
 import React from 'react';
+import { decodeReactError, type DecodedReactError } from "../utils/reactErrorDecoder";
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
   errorInfo?: React.ErrorInfo;
+  decodedError?: DecodedReactError | null;
 }
 
 interface ErrorBoundaryProps {
@@ -13,20 +15,29 @@ interface ErrorBoundaryProps {
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, decodedError: null };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    return { hasError: true, error, decodedError: null };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🚨 ErrorBoundary caught an error:', error, errorInfo);
     console.error('🚨 Full error stack:', error.stack);
     console.error('🚨 Component stack:', errorInfo.componentStack);
-    
+
+    const decodedError = decodeReactError(error);
+
+    if (decodedError) {
+      console.info('🧩 Decoded React error:', decodedError);
+    }
+
     // Store error info in state for display
-    this.setState({ errorInfo });
+    this.setState({
+      errorInfo,
+      decodedError,
+    });
   }
 
   render() {
@@ -54,6 +65,28 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
                     {this.state.error?.message || 'Unknown error'}
                   </code>
                 </div>
+                {this.state.decodedError && (
+                  <div className="mt-4 space-y-2">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                        React decoded message
+                      </p>
+                      <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
+                        {this.state.decodedError.message}
+                      </p>
+                    </div>
+                    {this.state.decodedError.helpUrl && (
+                      <a
+                        href={this.state.decodedError.helpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-xs font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+                      >
+                        View official React guidance →
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Error Type */}
