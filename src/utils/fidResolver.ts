@@ -1,4 +1,5 @@
-import { lookupFarcasterProfile } from './farcaster';
+import { lookupFarcasterProfile } from "./farcaster";
+import { logNeynarDebug, logNeynarError, logNeynarInfo } from "./neynarDebug";
 
 /**
  * Resolve Farcaster ID (FID) from wallet address
@@ -6,18 +7,18 @@ import { lookupFarcasterProfile } from './farcaster';
  */
 export const resolveFidFromAddress = async (address: string): Promise<number | null> => {
   try {
-    console.log("🔍 FidResolver: Looking up FID for address:", address);
-    
+    logNeynarDebug("Resolving FID for address", { address });
+
     const profile = await lookupFarcasterProfile(address);
     if (profile && profile.fid) {
-      console.log("✅ FidResolver: Found FID:", profile.fid, "for address:", address);
+      logNeynarInfo("Resolved FID for address", { address, fid: profile.fid, username: profile.username });
       return profile.fid;
     }
-    
-    console.log("❌ FidResolver: No FID found for address:", address);
+
+    logNeynarInfo("No FID found for address", { address });
     return null;
   } catch (error) {
-    console.error("❌ FidResolver: Error resolving FID:", error);
+    logNeynarError("Error resolving FID from address", error, { address });
     return null;
   }
 };
@@ -26,15 +27,15 @@ export const resolveFidFromAddress = async (address: string): Promise<number | n
  * Resolve multiple FIDs from wallet addresses
  */
 export const resolveFidsFromAddresses = async (addresses: string[]): Promise<number[]> => {
-  console.log("🔍 FidResolver: Resolving FIDs for addresses:", addresses);
-  
+  logNeynarDebug("Resolving FIDs for multiple addresses", { addresses });
+
   const fidPromises = addresses.map(address => resolveFidFromAddress(address));
   const fids = await Promise.all(fidPromises);
-  
+
   // Filter out null values and return only valid FIDs
   const validFids = fids.filter((fid): fid is number => fid !== null);
-  
-  console.log("✅ FidResolver: Resolved FIDs:", validFids);
+
+  logNeynarInfo("Resolved valid FIDs", { fids: validFids });
   return validFids;
 };
 
@@ -43,20 +44,20 @@ export const resolveFidsFromAddresses = async (addresses: string[]): Promise<num
  */
 export const getAllSubscribedUserFids = async (): Promise<number[]> => {
   try {
-    console.log("📋 FidResolver: Getting all users with notifications enabled");
-    
+    logNeynarDebug("Fetching subscribed user FIDs from API endpoint");
+
     // Call our API endpoint to get users with notifications enabled
     const response = await fetch('/api/notifications/enabled-users');
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    console.log("✅ FidResolver: Retrieved users with notifications enabled:", data.fids);
+    logNeynarInfo("Fetched subscribed FIDs", { fids: data.fids });
     return data.fids || [];
   } catch (error) {
-    console.error("❌ FidResolver: Error getting users with notifications enabled:", error);
+    logNeynarError("Failed to fetch subscribed user FIDs", error);
     return [];
   }
 };
