@@ -1,3 +1,5 @@
+import { logNeynarDebug, logNeynarError, logNeynarInfo, logNeynarWarning } from "./neynarDebug";
+
 export interface FarcasterProfile {
   username: string;
   displayName?: string;
@@ -8,33 +10,37 @@ export interface FarcasterProfile {
 
 export const lookupFarcasterProfile = async (address: string): Promise<FarcasterProfile | null> => {
   try {
-    console.log("🔍 Farcaster: Looking up profile for address:", address);
-    
+    logNeynarDebug("Looking up Farcaster profile via Neynar API", { address });
+
+    const endpoint = `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`;
+
     // Using Neynar API v2 to lookup Farcaster profiles by address
-    const response = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'x-api-key': 'NEYNAR_API_DOCS', // Free tier API key for testing
-        },
-      }
-    );
+    const response = await fetch(endpoint, {
+      headers: {
+        Accept: "application/json",
+        "x-api-key": "NEYNAR_API_DOCS", // Free tier API key for testing
+      },
+    });
 
     if (!response.ok) {
-      console.log("❌ Farcaster: API request failed:", response.status, response.statusText);
-      return null;
+      const errorContext = {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint,
+      };
+      logNeynarWarning("Neynar API request failed", errorContext);
+      throw new Error(`Neynar API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("📡 Farcaster: API response:", data);
-    console.log("📡 Farcaster: API response keys:", Object.keys(data));
-    console.log("📡 Farcaster: Looking for address key:", address.toLowerCase());
+    logNeynarDebug("Received response from Neynar API", {
+      keys: Object.keys(data),
+    });
 
     // Check if we have users data and the address exists
     const addressKey = address.toLowerCase();
     if (!data[addressKey] || data[addressKey].length === 0) {
-      console.log("📭 Farcaster: No users found for address:", address);
+      logNeynarInfo("No Neynar users returned for address", { address, addressKey });
       return null;
     }
 
@@ -49,10 +55,10 @@ export const lookupFarcasterProfile = async (address: string): Promise<Farcaster
       fid: user.fid,
     };
 
-    console.log("✅ Farcaster: Profile found:", profile);
+    logNeynarInfo("Successfully resolved Farcaster profile", { fid: profile.fid, username: profile.username });
     return profile;
   } catch (error) {
-    console.error("💥 Farcaster: Lookup error:", error);
+    logNeynarError("Farcaster profile lookup failed", error, { address });
     return null;
   }
 };

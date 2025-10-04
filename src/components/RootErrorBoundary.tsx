@@ -6,6 +6,8 @@ interface RootErrorBoundaryState {
   error?: Error;
   errorInfo?: React.ErrorInfo;
   decodedError?: DecodedReactError | null;
+  stackFrames: string[];
+  neynarStackFrames: string[];
 }
 
 interface RootErrorBoundaryProps {
@@ -19,11 +21,11 @@ interface RootErrorBoundaryProps {
 class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErrorBoundaryState> {
   constructor(props: RootErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, decodedError: null };
+    this.state = { hasError: false, decodedError: null, stackFrames: [], neynarStackFrames: [] };
   }
 
   static getDerivedStateFromError(error: Error): RootErrorBoundaryState {
-    return { hasError: true, error, decodedError: null };
+    return { hasError: true, error, decodedError: null, stackFrames: [], neynarStackFrames: [] };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -37,9 +39,30 @@ class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErro
       console.info('🧩 Decoded React error:', decodedError);
     }
 
+    const stackFrames = (error.stack ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    const neynarStackFrames = stackFrames.filter((line) => line.toLowerCase().includes('neynar'));
+
+    if (stackFrames.length > 0) {
+      console.groupCollapsed('🧵 Parsed stack frames');
+      stackFrames.forEach((frame, index) => {
+        console.log(`#${index}`, frame);
+      });
+      console.groupEnd();
+    }
+
+    if (neynarStackFrames.length > 0) {
+      console.warn('🛡️ Neynar related stack frames detected:', neynarStackFrames);
+    }
+
     this.setState({
       errorInfo,
       decodedError,
+      error,
+      stackFrames,
+      neynarStackFrames,
     });
 
     // Log to our global error handler
@@ -48,7 +71,9 @@ class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErro
         timestamp: new Date().toISOString(),
         error: error,
         errorInfo: errorInfo,
-        level: 'root-boundary'
+        level: 'root-boundary',
+        stackFrames,
+        neynarStackFrames,
       });
     }
   }
@@ -110,6 +135,35 @@ class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErro
                     {this.state.error.stack}
                   </pre>
                 </div>
+              </div>
+            )}
+
+            {this.state.stackFrames.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Parsed Stack Frames
+                </h2>
+                <ol className="list-decimal list-inside space-y-1 text-xs font-mono text-gray-700 dark:text-gray-200">
+                  {this.state.stackFrames.map((frame, index) => (
+                    <li key={index}>{frame}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {this.state.neynarStackFrames.length > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg shadow-md p-6 mb-4">
+                <h2 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
+                  Neynar Related Stack Frames
+                </h2>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                  These stack frames mention Neynar and may indicate where the failure originated.
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-xs font-mono text-yellow-800 dark:text-yellow-100">
+                  {this.state.neynarStackFrames.map((frame, index) => (
+                    <li key={index}>{frame}</li>
+                  ))}
+                </ul>
               </div>
             )}
 
