@@ -9,6 +9,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    minify: false,
+  },
   test: {
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",

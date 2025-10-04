@@ -1,19 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useMiniApp } from '@neynar/react';
-import ErrorBoundary from './ErrorBoundary';
+import { useEffect, useState } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
+import ErrorBoundary from "./ErrorBoundary";
 
 /**
  * Component to help users add the MiniApp and enable notifications
- * This uses the official Neynar React SDK
+ * This interacts directly with the Farcaster Mini App SDK so the UI can
+ * fall back gracefully when Neynar's React helpers aren't available.
  */
 const NotificationSetupContent = () => {
-  const { isSDKLoaded, addMiniApp } = useMiniApp();
+  const [isCheckingEnvironment, setIsCheckingEnvironment] = useState(true);
+  const [isMiniAppEnvironment, setIsMiniAppEnvironment] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Early return if SDK is not loaded to prevent rendering issues
-  if (!isSDKLoaded) {
+  useEffect(() => {
+    let isCancelled = false;
+
+    const detectEnvironment = async () => {
+      try {
+        if (!sdk || typeof sdk.isInMiniApp !== "function") {
+          if (!isCancelled) {
+            setIsMiniAppEnvironment(false);
+          }
+          return;
+        }
+
+        const result = sdk.isInMiniApp();
+        const resolved = typeof result === "boolean" ? result : await result;
+
+        if (!isCancelled) {
+          setIsMiniAppEnvironment(Boolean(resolved));
+        }
+      } catch (sdkError) {
+        console.warn("NotificationSetup: failed to detect Farcaster Mini App environment", sdkError);
+        if (!isCancelled) {
+          setIsMiniAppEnvironment(false);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsCheckingEnvironment(false);
+        }
+      }
+    };
+
+    void detectEnvironment();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  if (isCheckingEnvironment) {
     return (
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <div className="flex">
@@ -24,10 +62,10 @@ const NotificationSetupContent = () => {
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-              ⏳ Loading Neynar SDK...
+              ⏳ Detecting Farcaster environment...
             </h3>
             <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-              <p>Please wait while the notification system initializes.</p>
+              <p>Please wait while we check if notifications can be enabled from this device.</p>
             </div>
           </div>
         </div>
@@ -35,39 +73,66 @@ const NotificationSetupContent = () => {
     );
   }
 
-  const handleAddMiniApp = async () => {
-    if (!isSDKLoaded) {
-      setError('Neynar SDK not loaded yet. Please try again.');
-      return;
-    }
+  if (!isMiniAppEnvironment) {
+    return (
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3 space-y-2">
+            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              Open in the Farcaster Mini App to enable notifications
+            </h3>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Notifications are only available inside the Farcaster client. Launch the LNDY Mini App in Farcaster and open this
+              screen again to add notifications.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  const handleAddMiniApp = async () => {
     try {
       setIsAdding(true);
       setError(null);
 
-      // Add error boundary around Neynar SDK call
-      let result;
-      try {
-        result = await addMiniApp();
-      } catch (sdkError) {
-        console.error('❌ Neynar SDK error:', sdkError);
-        throw new Error('Neynar SDK returned an error. Please try again.');
+      if (!sdk || !sdk.actions || typeof sdk.actions.addMiniApp !== "function") {
+        throw new Error("Mini App actions are unavailable in this environment.");
       }
 
-      if (result && result.added) {
-        setIsAdded(true);
-        console.log('✅ MiniApp added successfully');
+      // Attempt to add the mini app using the Farcaster SDK directly
+      let result: unknown;
 
-        if (result.notificationDetails) {
-          console.log('🔔 Notification token received:', result.notificationDetails.token);
+      try {
+        result = await sdk.actions.addMiniApp();
+      } catch (sdkError) {
+        console.error("❌ Neynar SDK error:", sdkError);
+        throw new Error("Neynar SDK returned an error. Please try again.");
+      }
+
+      const wasAdded = Boolean((result as { added?: boolean })?.added);
+
+      if (wasAdded) {
+        setIsAdded(true);
+        console.log("✅ MiniApp added successfully");
+
+        const notificationDetails = (result as { notificationDetails?: { token?: string } })?.notificationDetails;
+
+        if (notificationDetails?.token) {
+          console.log("🔔 Notification token received:", notificationDetails.token);
           // The webhook will handle storing this token
         }
       } else {
-        setError('Failed to add MiniApp. Please try again.');
+        setError("Failed to add MiniApp. Please try again.");
       }
     } catch (err) {
-      console.error('❌ Error adding MiniApp:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add MiniApp');
+      console.error("❌ Error adding MiniApp:", err);
+      setError(err instanceof Error ? err.message : "Failed to add MiniApp");
     } finally {
       setIsAdding(false);
     }
@@ -113,9 +178,9 @@ const NotificationSetupContent = () => {
           <div className="mt-3">
             <button
               onClick={handleAddMiniApp}
-              disabled={!isSDKLoaded || isAdding}
+              disabled={isAdding}
               className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                (!isSDKLoaded || isAdding) ? 'opacity-50 cursor-not-allowed' : ''
+                isAdding ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               {isAdding ? (
