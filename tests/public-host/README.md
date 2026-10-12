@@ -25,3 +25,9 @@ Artifacts retain public result metadata and screenshots for seven days. They
 contain no migration snapshots or credentials. A passing workflow establishes
 the selected public host's behavior from that runner. It does not erase a
 separately recorded stale DNS answer on another network.
+
+For server-rendered forms, the browser waits until initial scripts and requests
+settle before entering filter values. DOMContentLoaded alone can expose an input
+before React attaches its event handlers. The runner revision may differ from
+the tested application's deployment revision; `expected_revision` always names
+the application revision whose public marker must match.

@@ -112,6 +112,12 @@ async function checkBrowser() {
     assert.equal(markerResponse.status(), 200);
     assert.equal(JSON.parse(await page.locator('body').innerText()).revision, revision);
     await page.goto(origin, { waitUntil: 'domcontentloaded' });
+    if (app === 'osstrust' || app === 'foia') {
+      // SSR inputs exist before the client module attaches event handlers.
+      // These read-only pages have finite initial requests and no live streams.
+      await page.waitForLoadState('networkidle');
+      evidence.browser.readiness = 'initial scripts and requests settled before input';
+    }
     if (app === 'lndy') {
       await page.getByRole('heading', { name: 'Available Loans', exact: true }).waitFor();
       await page.getByText('Requesting', { exact: true }).first().waitFor({ timeout: 90_000 });
@@ -145,6 +151,7 @@ async function checkBrowser() {
       evidence.browser.filters = 'curl=1; C=2; C+Unclaimed=1';
     } else if (app === 'foia') {
       await page.getByRole('status').filter({ hasText: 'Posting and voting are temporarily paused while we move the board. You can still read all ideas and comments.' }).waitFor();
+      assert.ok(await page.getByRole('button', { name: 'Post idea', exact: true }).isDisabled(), 'Posting remains disabled');
       await page.waitForFunction(count => document.querySelectorAll('article').length === count, foiaIdeas.length);
       const renderedTitles = await page.locator('article h3').allTextContents();
       assert.ok(renderedTitles.every((title, index) => title === foiaIdeas[index].title), 'All public idea headings render in API order');
