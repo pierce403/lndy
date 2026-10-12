@@ -10,11 +10,16 @@ const sites = {
   fhtagn: { host: 'fhtagn.party', project: 'fhtagn.party' },
   osstrust: { host: 'osstrust.org', project: 'osstrust' },
   foia: { host: 'foia.fun', project: 'foia.fun' },
+  dracoria: { host: 'dracoria.org', project: 'dracoria-thirdweb' },
+  w3rk: { host: 'w3rk.net', project: 'w3rk.net' },
 };
 const app = process.env.SMOKE_APP;
 const site = sites[app];
 const revision = process.env.EXPECTED_REVISION;
 const foiaMode = process.env.FOIA_MODE || 'maintenance';
+const w3rkMode = process.env.W3RK_MODE || 'maintenance';
+assert.ok(['maintenance', 'writable'].includes(w3rkMode));
+assert.ok(app === 'w3rk' || w3rkMode === 'maintenance');
 assert.ok(site, 'SMOKE_APP must select a fixed, approved public application');
 assert.match(revision ?? '', /^[0-9a-f]{40}$/, 'An exact Git revision is required');
 assert.ok(['maintenance', 'writable'].includes(foiaMode), 'Invalid FOIA mode');
@@ -22,6 +27,7 @@ assert.ok(app === 'foia' || foiaMode === 'maintenance', 'Writable mode is accept
 const origin = `https://${site.host}`;
 const evidence = { app, origin, expected_revision: revision, started_at: new Date().toISOString(), checks: [], browser: {} };
 if (app === 'foia') evidence.foia_mode = foiaMode;
+if (app === 'w3rk') evidence.w3rk_mode = w3rkMode;
 let foiaIdeas = [];
 let foiaComments = [];
 let foiaCommentIndex = -1;
@@ -77,6 +83,29 @@ async function checkHttp() {
       assert.equal(data.count, count, query);
       evidence.checks.at(-1).count = data.count;
     }
+  } else if (app === 'dracoria') {
+    assert.ok(home.includes('Wallet sign-in is currently unavailable and will be repaired later.'));
+    for (const path of ['/api/dragon/chat', '/api/updateSettings']) await request(path, 404);
+    evidence.deferred_feature = 'Wallet sign-in intentionally unavailable; repair deferred by owner';
+  } else if (app === 'w3rk') {
+    const maintenance = w3rkMode === 'maintenance';
+    assert.equal(home.includes('Updates and sign-in are temporarily paused'), maintenance);
+    for (const path of ['/j', '/s', '/sw.js', '/manifest.json']) await request(path);
+    const before = {};
+    for (const kind of ['jobs', 'services']) {
+      const rows = await (await request('/api/' + kind)).json();
+      assert.ok(Array.isArray(rows) && rows.length > 0, 'Transferred public listings must be readable');
+      before[kind] = publicDigest(rows);
+      evidence[kind + '_count'] = rows.length;
+    }
+    if (maintenance) {
+      const nonce = await request('/api/auth/nonce', 503);
+      assert.equal(nonce.headers.get('set-cookie'), null);
+    }
+    const blocked = await fetch(origin + '/api/jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}', redirect: 'manual', signal: AbortSignal.timeout(30_000) });
+    assert.equal(blocked.status, maintenance ? 503 : 401, 'No authenticated session means no accepted write');
+    evidence.checks.push({ path: '/api/jobs', method: 'POST {} without a session', status: blocked.status });
+    for (const kind of ['jobs', 'services']) assert.equal(publicDigest(await (await request('/api/' + kind)).json()), before[kind], 'Public records changed during rejected requests; investigate concurrent writes');
   } else if (app === 'foia') {
     await redirect('https://www.foia.fun/api/ideas?migration_probe=one%20two', `${origin}/api/ideas?migration_probe=one%20two`, 308);
     const ideaResponse = await request('/api/ideas');
@@ -132,6 +161,14 @@ async function checkBrowser() {
     const markerResponse = await page.goto(`${origin}/deployment.json`);
     assert.equal(markerResponse.status(), 200);
     assert.equal(JSON.parse(await page.locator('body').innerText()).revision, revision);
+    if (app === 'w3rk') {
+      await page.evaluate(async () => {
+        for (const name of ['w3rk-cache', 'workbox-migration-fixture']) {
+          const cache = await caches.open(name);
+          await cache.put('/api/auth/session', new Response('synthetic-private-cache-fixture'));
+        }
+      });
+    }
     await page.goto(origin, { waitUntil: 'domcontentloaded' });
     if (app === 'osstrust' || app === 'foia') {
       // SSR inputs exist before the client module attaches event handlers.
@@ -170,6 +207,28 @@ async function checkBrowser() {
       await page.getByLabel('Claim status', { exact: true }).selectOption('Unclaimed');
       await summary.getByText('1 programs', { exact: true }).waitFor();
       evidence.browser.filters = 'curl=1; C=2; C+Unclaimed=1';
+    } else if (app === 'dracoria') {
+      await page.getByText('Wallet sign-in is currently unavailable and will be repaired later.', { exact: true }).waitFor();
+      assert.ok(await page.getByRole('button', { name: 'Wallet sign-in unavailable', exact: true }).isDisabled());
+      for (const name of ['Dragon Stats', 'Garden Stats']) await page.getByRole('heading', { name, exact: true }).waitFor();
+      evidence.browser.auth = 'Unavailable notice and disabled login control; no wallet action';
+    } else if (app === 'w3rk') {
+      await page.getByRole('heading', { name: 'w3rk.net', exact: true }).waitFor();
+      const notice = page.getByText(/Updates and sign-in are temporarily paused/);
+      if (w3rkMode === 'maintenance') await notice.waitFor();
+      else assert.equal(await notice.count(), 0);
+      await page.waitForFunction(async () => {
+        const registration = await navigator.serviceWorker.ready;
+        const names = await caches.keys();
+        return registration.active && !names.includes('w3rk-cache') && !names.includes('workbox-migration-fixture');
+      });
+      evidence.browser.pwa = await page.evaluate(async () => ({
+        scope: (await navigator.serviceWorker.ready).scope,
+        obsoleteCacheNamesRemoved: !(await caches.keys()).some(name => name === 'w3rk-cache' || name === 'workbox-migration-fixture'),
+      }));
+      assert.equal(evidence.browser.pwa.scope, origin + '/');
+      assert.ok(evidence.browser.pwa.obsoleteCacheNamesRemoved);
+      evidence.browser.auth = 'No wallet selected, connected or signed';
     } else if (app === 'foia') {
       const notice = page.getByRole('status').filter({ hasText: 'Posting and voting are temporarily paused while we move the board. You can still read all ideas and comments.' });
       const disabled = foiaMode === 'maintenance';
@@ -197,11 +256,11 @@ async function checkBrowser() {
     evidence.browser.rpc = rpc;
     evidence.browser.page_errors = errors;
     assert.deepEqual(errors, [], 'No uncaught page errors');
-    await page.screenshot({ path: 'results/browser.png', fullPage: true, mask: app === 'foia' ? [page.locator('article')] : [] });
+    await page.screenshot({ path: 'results/browser.png', fullPage: true, mask: app === 'foia' ? [page.locator('article')] : app === 'w3rk' ? [page.locator('.card')] : [] });
   } finally {
     evidence.browser.page_errors = errors;
     evidence.browser.rpc = rpc;
-    await page.screenshot({ path: 'results/final-state.png', fullPage: true, mask: app === 'foia' ? [page.locator('article')] : [] }).catch(() => {});
+    await page.screenshot({ path: 'results/final-state.png', fullPage: true, mask: app === 'foia' ? [page.locator('article')] : app === 'w3rk' ? [page.locator('.card')] : [] }).catch(() => {});
     await browser.close();
   }
 }

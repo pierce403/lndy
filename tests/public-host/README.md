@@ -38,3 +38,12 @@ settle before entering filter values. DOMContentLoaded alone can expose an input
 before React attaches its event handlers. The runner revision may differ from
 the tested application's deployment revision; `expected_revision` always names
 the application revision whose public marker must match.
+
+
+Dracoria acceptance includes its owner-approved unavailable-login notice and
+disabled control. W3RK supports maintenance/writable modes: exact marker, public
+listing reads, rejected unauthenticated POST (never accepted content), and obsolete
+synthetic PWA cache cleanup. It does not connect/sign a wallet or send messages.
+Listing rows stay in memory and W3RK card screenshots are masked. Production
+nonce creation is skipped in writable mode. This is separate from source/D1
+reconciliation and the owner’s staging wallet acceptance.

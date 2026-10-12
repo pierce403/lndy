@@ -7,13 +7,20 @@ on:
         description: Public application to verify after its native deployment
         type: choice
         required: true
-        options: [lndy, fhtagn, osstrust, foia]
+        options: [lndy, fhtagn, osstrust, foia, dracoria, w3rk]
       expected_revision:
         description: Exact 40-character Git commit expected at deployment.json
         type: string
         required: true
       foia_mode:
         description: FOIA only; writable checks invalid payload rejection without creating data
+        type: choice
+        required: true
+        default: maintenance
+        options: [maintenance, writable]
+
+      w3rk_mode:
+        description: W3RK only; verify maintenance or normal authenticated access without creating data
         type: choice
         required: true
         default: maintenance
@@ -48,6 +55,7 @@ jobs:
           SMOKE_APP: ${{ inputs.app }}
           EXPECTED_REVISION: ${{ inputs.expected_revision }}
           FOIA_MODE: ${{ inputs.foia_mode }}
+          W3RK_MODE: ${{ inputs.w3rk_mode }}
       - name: Keep public acceptance evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
