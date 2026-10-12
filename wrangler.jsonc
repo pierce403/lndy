@@ -12,6 +12,19 @@
   },
   "observability": {
     "enabled": true,
-    "traces": { "enabled": true }
-  }
+    "traces": {
+      "enabled": true
+    }
+  },
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "lndy.org/*",
+      "zone_name": "lndy.org"
+    },
+    {
+      "pattern": "www.lndy.org/*",
+      "zone_name": "lndy.org"
+    }
+  ]
 }

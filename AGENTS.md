@@ -8,3 +8,7 @@ The migration coordinator owns DNS/native Git/cutover, and this preparation bran
 must not be pushed or deployed until that coordinator is ready. Preserve Vercel
 recovery and do not re-enable its Git builds implicitly.
 Record exact checks and limitations in `NOTES.md`; ignore raw `.migration/` evidence.
+
+Production cutover uses ordinary zone routes (not custom domains) and disabled
+version preview URLs. DNS proxying, TLS readiness and the route-bearing production
+push must be sequenced by the migration coordinator.

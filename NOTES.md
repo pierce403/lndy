@@ -42,8 +42,29 @@ Use Node 22.23.3 (`.nvmrc`), install with `npm ci`, build with
 `npm run build:cloudflare`, and deploy with `npx wrangler deploy`. Deployment
 credentials stay in Cloudflare. `vercel.json` disables future Vercel Git builds
 while the existing deployment remains the recovery source. Do not run a local
-production deployment concurrently with native builds. Initial config intentionally
-has no production routes; the migration coordinator owns DNS, routes and cutover.
+production deployment concurrently with native builds. The initial migration commit had no production routes; the migration coordinator
+owns DNS, routes and cutover. The later route candidate below remains unpublished.
 `/deployment.json` reports `CF_COMMIT_SHA` (or the local Git commit) with `no-store`.
 A local build does not establish deployment identity, DNS, TLS or production behavior.
 Ignored `.migration/` contains local command logs, HTTP evidence and a screenshot.
+
+## 2026-10-12 route cutover candidate
+
+Prepared `preview_urls: false` and ordinary zone routes for `lndy.org/*`.
+Also includes `www.lndy.org/*`; existing Worker-first www redirect and terminal
+asset 404 behavior are unchanged.
+Routes use `zone_name` and do not create custom-domain DNS. Build and Wrangler
+dry run pass. No push, deployment, proxy/DNS change or certificate change was made
+for this candidate. The coordinator must finish DNS/TLS readiness and sequence the
+production push.
+
+The coordinator reported native build `2a9b3778-605d-4f6d-84e1-56a07d7fbf87`
+and version `23774981-810b-449a-a348-f4934cb4b057`. Independently checked
+`https://lndy.bcrt43.workers.dev`: 13 HTTP checks pass. The no-store deployment
+marker is `645d0af87feb85827653a7d1d54dcdd1ac4b9fe5`; manifests and public images
+exactly match source, JS/CSS load, and missing path plus unimplemented webhook
+return actual 404. Browser About tab, wallet chooser and 404 page render.
+The live bundle contains both verified public build values, compared without
+printing them. Thirdweb RPC returns 401 from the Worker hostname; the custom-domain
+loan list check remains required. Python urllib received Cloudflare error 1010,
+while normal curl/browser requests succeed; no security setting was changed.
