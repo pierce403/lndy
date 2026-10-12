@@ -68,3 +68,22 @@ The live bundle contains both verified public build values, compared without
 printing them. Thirdweb RPC returns 401 from the Worker hostname; the custom-domain
 loan list check remains required. Python urllib received Cloudflare error 1010,
 while normal curl/browser requests succeed; no security setting was changed.
+
+## 2026-10-12 independent public acceptance
+
+The coordinator deployed route commit `afeb66b2c1162119dd8bf89a5cce528d919cbbfe`
+through native build `4d16e58a-5733-4b1c-92aa-d485e4492e54`, active version
+`3f7726a4-de93-44f2-a397-312ac711d838`. Authoritative-edge checks with normal TLS
+verification pass the exact marker, Farcaster manifests, 404, HTTP upgrade and
+www path/query redirect. Ordinary DNS for www also passes. The local network's
+apex DNS answer renewed stale Vercel data after its TTL expired; both authoritative
+nameservers and Google/Cloudflare HTTPS DNS APIs return the correct Cloudflare
+addresses. No DNS, TLS or network policy change was made to bypass this limitation.
+
+Added the manual-only `Public host smoke` GitHub Actions workflow with fixed public
+host choices and exact deployment-revision input. Its isolated pinned Playwright
+harness checks normal DNS/HTTPS and the application's read-only Chromium flows
+from an independent runner. GitHub has read-only repository permissions and no
+deployment secrets; Cloudflare native Git remains the only production publisher.
+Vercel Git publication stays disabled and its original target/aliases are retained.
+Workflow source/syntax validation is separate from the eventual CI browser result.

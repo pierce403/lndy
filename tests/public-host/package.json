@@ -1,0 +1,7 @@
+{
+  "name": "public-host-acceptance",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test smoke.test.mjs" },
+  "devDependencies": { "playwright": "1.64.0" }
+}
