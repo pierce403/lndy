@@ -12,6 +12,12 @@ on:
         description: Exact 40-character Git commit expected at deployment.json
         type: string
         required: true
+      foia_mode:
+        description: FOIA only; writable checks invalid payload rejection without creating data
+        type: choice
+        required: true
+        default: maintenance
+        options: [maintenance, writable]
 
 permissions:
   contents: read
@@ -41,6 +47,7 @@ jobs:
         env:
           SMOKE_APP: ${{ inputs.app }}
           EXPECTED_REVISION: ${{ inputs.expected_revision }}
+          FOIA_MODE: ${{ inputs.foia_mode }}
       - name: Keep public acceptance evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

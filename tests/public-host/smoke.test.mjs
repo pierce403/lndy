@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve4 } from 'node:dns/promises';
+import { createHash } from 'node:crypto';
 import { chromium } from 'playwright';
 
 const sites = {
@@ -13,13 +14,18 @@ const sites = {
 const app = process.env.SMOKE_APP;
 const site = sites[app];
 const revision = process.env.EXPECTED_REVISION;
+const foiaMode = process.env.FOIA_MODE || 'maintenance';
 assert.ok(site, 'SMOKE_APP must select a fixed, approved public application');
 assert.match(revision ?? '', /^[0-9a-f]{40}$/, 'An exact Git revision is required');
+assert.ok(['maintenance', 'writable'].includes(foiaMode), 'Invalid FOIA mode');
+assert.ok(app === 'foia' || foiaMode === 'maintenance', 'Writable mode is accepted only for FOIA');
 const origin = `https://${site.host}`;
 const evidence = { app, origin, expected_revision: revision, started_at: new Date().toISOString(), checks: [], browser: {} };
+if (app === 'foia') evidence.foia_mode = foiaMode;
 let foiaIdeas = [];
 let foiaComments = [];
 let foiaCommentIndex = -1;
+const publicDigest = rows => createHash('sha256').update(JSON.stringify([...rows].sort((a, b) => a.id.localeCompare(b.id)))).digest('hex');
 await mkdir('results', { recursive: true });
 
 async function request(path, expected = 200) {
@@ -88,10 +94,25 @@ async function checkHttp() {
     for (const path of ['/api/ideas', '/api/ideas/not-a-uuid/comments', '/api/votes']) {
       const response = await fetch(origin + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}', redirect: 'manual', signal: AbortSignal.timeout(30_000) });
       evidence.checks.push({ path, method: 'POST {}', status: response.status });
-      assert.equal(response.status, 503, 'Read-only maintenance must reject empty POST');
-      assert.equal(response.headers.get('retry-after'), '60');
-      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(response.status, foiaMode === 'maintenance' ? 503 : 400, 'Empty POST must be rejected before writes or voter-cookie creation');
+      if (foiaMode === 'maintenance') {
+        assert.equal(response.headers.get('retry-after'), '60');
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+      }
       assert.equal(response.headers.get('set-cookie'), null);
+    }
+    // Compare only public API readbacks in memory. Persist counts/digests, not rows.
+    // Concurrent genuine user writes can make this check fail without proving
+    // that an invalid test request wrote data; preserve that distinction.
+    const afterIdeas = (await (await request('/api/ideas')).json()).ideas;
+    const beforeDigest = publicDigest(foiaIdeas);
+    const afterDigest = publicDigest(afterIdeas);
+    evidence.invalid_posts = { expected_status: foiaMode === 'maintenance' ? 503 : 400, set_cookie: false, public_ideas_digest_before: beforeDigest, public_ideas_digest_after: afterDigest };
+    assert.ok(beforeDigest === afterDigest, 'Public idea readback changed during invalid requests; investigate concurrent writes');
+    if (foiaCommentIndex >= 0) {
+      const afterComments = (await (await request(`/api/ideas/${foiaIdeas[foiaCommentIndex].id}/comments`)).json()).comments;
+      assert.ok(publicDigest(foiaComments) === publicDigest(afterComments), 'Public comment readback changed during invalid requests; investigate concurrent writes');
+      evidence.invalid_posts.public_comment_readback_unchanged = true;
     }
   }
 }
@@ -150,23 +171,28 @@ async function checkBrowser() {
       await summary.getByText('1 programs', { exact: true }).waitFor();
       evidence.browser.filters = 'curl=1; C=2; C+Unclaimed=1';
     } else if (app === 'foia') {
-      await page.getByRole('status').filter({ hasText: 'Posting and voting are temporarily paused while we move the board. You can still read all ideas and comments.' }).waitFor();
-      assert.ok(await page.getByRole('button', { name: 'Post idea', exact: true }).isDisabled(), 'Posting remains disabled');
+      const notice = page.getByRole('status').filter({ hasText: 'Posting and voting are temporarily paused while we move the board. You can still read all ideas and comments.' });
+      const disabled = foiaMode === 'maintenance';
+      if (disabled) await notice.waitFor();
+      else assert.equal(await notice.count(), 0, 'Writable mode removes the maintenance notice');
+      assert.equal(await page.getByRole('button', { name: 'Post idea', exact: true }).isDisabled(), disabled, 'Post idea matches the selected mode');
       await page.waitForFunction(count => document.querySelectorAll('article').length === count, foiaIdeas.length);
       const renderedTitles = await page.locator('article h3').allTextContents();
       assert.ok(renderedTitles.every((title, index) => title === foiaIdeas[index].title), 'All public idea headings render in API order');
-      for (const button of await page.getByRole('button', { name: /^▲/ }).all()) assert.ok(await button.isDisabled(), 'Voting remains disabled');
       if (foiaCommentIndex >= 0) {
         const article = page.locator('article').nth(foiaCommentIndex);
         await article.getByRole('button', { name: /^Comments \(/ }).click();
         await page.waitForFunction(({ index, count }) => document.querySelectorAll('article')[index]?.querySelectorAll('p.text-sm.text-slate-100').length === count, { index: foiaCommentIndex, count: foiaComments.length });
         const bodies = await article.locator('p.text-sm.text-slate-100').allTextContents();
         assert.ok(foiaComments.every(comment => bodies.includes(comment.body)), 'Existing public comment bodies render');
-        assert.ok(await article.getByRole('button', { name: 'Comment', exact: true }).isDisabled());
+        assert.equal(await article.getByRole('button', { name: 'Comment', exact: true }).isDisabled(), disabled, 'Comment control matches the selected mode');
       }
+      for (const button of await page.getByRole('button', { name: /^▲/ }).all()) assert.equal(await button.isDisabled(), disabled, 'Idea and comment vote controls match the selected mode');
       evidence.browser.ideas_rendered = foiaIdeas.length;
       evidence.browser.comments_rendered = foiaComments.length;
-      evidence.browser.maintenance = 'notice visible; posting and voting disabled; no content stored';
+      evidence.browser.mode = disabled ? 'maintenance notice visible; write controls disabled' : 'maintenance notice absent; write controls enabled but never clicked';
+      assert.ok(!(await context.cookies()).some(cookie => cookie.name === 'foia_voter'), 'Read-only browser checks do not create a voter cookie');
+      evidence.browser.voter_cookie_created = false;
     }
     evidence.browser.rpc = rpc;
     evidence.browser.page_errors = errors;
