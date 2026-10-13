@@ -163,7 +163,7 @@ async function checkBrowser() {
     assert.equal(JSON.parse(await page.locator('body').innerText()).revision, revision);
     if (app === 'w3rk') {
       await page.evaluate(async () => {
-        for (const name of ['w3rk-cache', 'workbox-migration-fixture']) {
+        for (const name of ['start-url', 'w3rk-cache', 'workbox-migration-fixture']) {
           const cache = await caches.open(name);
           await cache.put('/api/auth/session', new Response('synthetic-private-cache-fixture'));
         }
@@ -220,11 +220,11 @@ async function checkBrowser() {
       await page.waitForFunction(async () => {
         const registration = await navigator.serviceWorker.ready;
         const names = await caches.keys();
-        return registration.active && !names.includes('w3rk-cache') && !names.includes('workbox-migration-fixture');
+        return registration.active && !names.includes('start-url') && !names.includes('w3rk-cache') && !names.includes('workbox-migration-fixture');
       });
       evidence.browser.pwa = await page.evaluate(async () => ({
         scope: (await navigator.serviceWorker.ready).scope,
-        obsoleteCacheNamesRemoved: !(await caches.keys()).some(name => name === 'w3rk-cache' || name === 'workbox-migration-fixture'),
+        obsoleteCacheNamesRemoved: !(await caches.keys()).some(name => name === 'start-url' || name === 'w3rk-cache' || name === 'workbox-migration-fixture'),
       }));
       assert.equal(evidence.browser.pwa.scope, origin + '/');
       assert.ok(evidence.browser.pwa.obsoleteCacheNamesRemoved);
