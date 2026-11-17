@@ -241,3 +241,7 @@ Original project code and documentation are licensed under the
 [Apache License 2.0](LICENSE). Third-party dependencies, source excerpts,
 assets, and other third-party material retain their respective licenses and
 copyright notices; this grant does not relicense that material.
+
+Files under `contracts/` carrying an explicit MIT SPDX identifier retain that
+file-level license. Those identifiers and existing compiled/deployed artifacts
+are unchanged; the root Apache license does not override explicit file licenses.
