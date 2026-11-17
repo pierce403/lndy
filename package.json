@@ -87,5 +87,6 @@
   },
   "engines": {
     "node": "22.x"
-  }
+  },
+  "license": "Apache-2.0"
 }

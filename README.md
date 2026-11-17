@@ -228,10 +228,6 @@ thirdweb deploy
 6. Push to branch: `git push origin feature-name`
 7. Submit a pull request
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
 ## Links
 
 - **Website**: [LNDY.org](https://lndy.org) 
@@ -239,3 +235,9 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **OpenSea**: NFTs visible once deployed
 - **Documentation**: See `contracts/README.md` for detailed testing docs
 
+## License
+
+Original project code and documentation are licensed under the
+[Apache License 2.0](LICENSE). Third-party dependencies, source excerpts,
+assets, and other third-party material retain their respective licenses and
+copyright notices; this grant does not relicense that material.
